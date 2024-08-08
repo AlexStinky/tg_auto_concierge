@@ -35,6 +35,9 @@ const UserSchema = new Schema({
     status: {
         type: String,
         default: 'free'
+    },
+    phone: {
+        type: Number
     }
 }, { versionKey: false });
 
