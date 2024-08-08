@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram Auto Concierge Bot
+After=network.target
+
+[Service]
+ExecStart=node bot.js
+ExecReload=node bot.js
+WorkingDirectory=/opt/tg_auto_concierge
+KillMode=process
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

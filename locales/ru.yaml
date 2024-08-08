@@ -1,0 +1,20 @@
+start_message: 'Здравствуйте!
+
+Выберите интересующий пункт:'
+
+aboutService_message: 'О сервисе'
+buySubscription_message: 'Оплатите подписку с помощью кнопки ниже:'
+
+aboutService_button: 'О сервисе'
+buySubscription_button: 'Купить подписку'
+renewSubscription_message: 'Продлить подписку'
+
+pay_button: 'Купить'
+
+order_button: 'Заказать услугу'
+renewSubscription_button: 'Продлить подписку'
+editCars_button: 'Редактировать авто'
+editPersonal_button: 'Редактировать личные данные'
+calendar_button: 'Календарь'
+
+back_button: 'Назад'
