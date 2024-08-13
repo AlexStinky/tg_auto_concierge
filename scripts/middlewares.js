@@ -4,6 +4,7 @@ const messages = require('./messages');
 
 const { sender } = require('../services/sender');
 const { userDBService } = require('../services/db');
+const { calendarService } = require('../services/calendar');
 
 const i18n = new TelegrafI18n({
     directory: './locales',
@@ -73,6 +74,18 @@ const commands = async (ctx, next) => {
 
         if (text.includes('/start')) {
             response_message = messages.start(user.lang, user);
+        }
+
+        if (text === '/test') {
+            const event = {
+                summary: 'Заказ водителя',
+                location: '123',
+                startDate: new Date(),
+                hours: 1
+            };
+            const res = await calendarService.addEvent(event);
+
+            console.log(res)
         }
 
         if (response_message) {

@@ -1,6 +1,6 @@
 const { Queue } = require('../modules/queue');
 
-const { userService } = require('./db');
+const { userDBService } = require('./db');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -204,11 +204,9 @@ class Sender extends Queue {
                         extra: {}
                     };
 
-                    console.log(message)
-
                     return this.sendMessage(chatId, temp);
                 } else if (this.ERRORS_DESCRIPTION.includes(response.description)) {
-                    const update = await userService.update({ tg_id: chatId }, {
+                    const update = await userDBService.update({ tg_id: chatId }, {
                         isActive: false
                     });
 
