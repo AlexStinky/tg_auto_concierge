@@ -13,23 +13,21 @@ const i18n = new TelegrafI18n({
     }
 });
 
-const DELETE_DELAY = 10000;
+const paginations = (lang, inline_keyboard, data, page, key, size = 5) => {
+    const length = data.length;
 
-const paginations = (lang, data, page, length, key, size = 5) => {
-    let inline_keyboard = [];
-
-    if (data.length > 0) {
-        if (page > 0 && page * size < length) {
-            inline_keyboard = [
+    if (length > 0) {
+        if (page > 0 && (page * size) < length) {
+            inline_keyboard[inline_keyboard.length] = [
                 { text: i18n.t(lang, 'back_button'), callback_data: `next-${key}-${page - 1}` },
                 { text: i18n.t(lang, 'next_button'), callback_data: `next-${key}-${page + 1}` }
             ];
         } else if (page === 0 && length > size) {
-            inline_keyboard = [
+            inline_keyboard[inline_keyboard.length] = [
                 { text: i18n.t(lang, 'next_button'), callback_data: `next-${key}-${page + 1}` }
             ];
         } else if (page > 0) {
-            inline_keyboard = [
+            inline_keyboard[inline_keyboard.length] = [
                 { text: i18n.t(lang, 'back_button'), callback_data: `next-${key}-${page - 1}` }
             ];
         }
@@ -109,8 +107,115 @@ const subscription = (lang, user, message_id = null) => {
     return message;
 };
 
+const services = (lang, data, page, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'chooseService_message'),
+        extra: {}
+    };
+    const key = 'srv';
+
+    let inline_keyboard = data.reduce((acc, el) => {
+        acc[acc.length] = [{
+            text: el.title + ' ' + `${el.available}/${el.all}`,
+            callback_data: `${key}-${el.id}`
+        }];
+
+        return acc;
+    }, []);
+
+    inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const cars = (lang, data, page, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'chooseCar_message'),
+        extra: {}
+    };
+    const key = 'car';
+
+    let inline_keyboard = data.reduce((acc, el) => {
+        acc[acc.length] = [{
+            text: el.brand + ' ' + el.model,
+            callback_data: `${key}-${el.id}`
+        }];
+
+        return acc;
+    }, []);
+
+    inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'back' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const location = (lang, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'enterLocation_message'),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
+
+    return message;
+};
+
+const checkOrder = (lang, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'checkOrder_message', data),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'confirm_button'), callback_data: 'confirm' }],
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
+
+    return message;
+};
+
 module.exports = {
     start,
     about,
-    subscription
+    subscription,
+    services,
+    cars,
+    location,
+    checkOrder
 }

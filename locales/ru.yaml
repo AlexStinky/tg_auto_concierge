@@ -5,6 +5,20 @@ start_message: 'Здравствуйте!
 aboutService_message: 'О сервисе'
 buySubscription_message: 'Оплатите подписку с помощью кнопки ниже:'
 
+chooseService_message: 'Выберите услугу:'
+chooseCar_message: 'Выберите авто:'
+enterLocation_message: 'Введите адрес или отправьте гео-локацию:'
+
+checkOrder_message: 'Перед тем как закончить, проверьте или все верно:
+
+${service}
+
+${car}
+
+${location}
+
+${startDate} - ${endDate}'
+
 aboutService_button: 'О сервисе'
 buySubscription_button: 'Купить подписку'
 renewSubscription_message: 'Продлить подписку'
@@ -18,3 +32,4 @@ editPersonal_button: 'Редактировать личные данные'
 calendar_button: 'Календарь'
 
 back_button: 'Назад'
+next_button: 'Вперед'

@@ -10,8 +10,7 @@ const UserSchema = new Schema({
     },
     tg_username: {
         type: String,
-        required: false,
-        default: '',
+        required: true
     },
     lang: {
         type: String,
@@ -34,10 +33,13 @@ const UserSchema = new Schema({
     },
     status: {
         type: String,
-        default: 'free'
+        default: 'free' // free, subscription, driver
     },
     phone: {
         type: Number
+    },
+    calendar_id: {
+        type: String
     }
 }, { versionKey: false });
 

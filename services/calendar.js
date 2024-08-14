@@ -34,14 +34,6 @@ class Calendar {
             const events = res.data.items;
 
             if (events.length) {
-                console.log(events)
-
-                for (let i = 0; i < events.length; i++) {
-                    const event = events[i];
-
-                    await this.deleteEvent(event.id);
-                }
-
                 return events;
             }
         } catch (err) {
@@ -75,18 +67,18 @@ class Calendar {
         return null;
     }
 
-    async addEvent(data) {
+    async addEvent(calendarId = 'primary', data) {
         const resource = {
-            'summary': 'Google I/O 2015',
-            'location': '800 Howard St., San Francisco, CA 94103',
-            'description': 'A chance to hear more about Google\'s developer products.',
-            'start': {
-              'dateTime': '2024-08-28T09:00:00-07:00',
-              'timeZone': 'America/Los_Angeles',
+            summary: data.summary,
+            location: data.location,
+            description: data.description,
+            start: {
+                dateTime: data.startTime.toISOString(),
+                timeZone: 'UTC',
             },
-            'end': {
-              'dateTime': '2024-08-28T17:00:00-07:00',
-              'timeZone': 'America/Los_Angeles',
+            end: {
+                dateTime: data.endTime.toISOString(),
+                timeZone: 'UTC',
             }
         };
 
@@ -94,8 +86,7 @@ class Calendar {
 
         try {
             const eventRes = await this.calendar.events.insert({
-                auth: this.JWT,
-                calendarId: 'primary', // d94a179fb2cafb7de4dac921f2c0af4c56e797dc1110c1712ad3deef4bc25054@group.calendar.google.com
+                calendarId,
                 resource
             });
 
@@ -107,10 +98,10 @@ class Calendar {
         return null;
     }
 
-    async deleteEvent(eventId) {
+    async deleteEvent(calendarId = 'primary', eventId) {
         try {
             await this.calendar.events.delete({
-                calendarId: 'primary',
+                calendarId,
                 eventId
             });
         } catch (err) {
@@ -121,6 +112,7 @@ class Calendar {
 
 const calendarService = new Calendar();
 calendarService.getEvents();
+calendarService.getCalendars();
 
 module.exports = {
     calendarService

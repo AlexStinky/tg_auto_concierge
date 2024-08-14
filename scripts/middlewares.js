@@ -3,8 +3,11 @@ const TelegrafI18n = require('telegraf-i18n/lib/i18n');
 const messages = require('./messages');
 
 const { sender } = require('../services/sender');
-const { userDBService } = require('../services/db');
 const { calendarService } = require('../services/calendar');
+const {
+    userDBService,
+    serviceDBService
+} = require('../services/db');
 
 const i18n = new TelegrafI18n({
     directory: './locales',
@@ -77,13 +80,18 @@ const commands = async (ctx, next) => {
         }
 
         if (text === '/test') {
+            const startTime = new Date();
+            const endTime = new Date();
+            startTime.setDate(startTime.getDate() + 1);
+            endTime.setDate(endTime.getDate() + 1);
             const event = {
                 summary: 'Заказ водителя',
                 location: '123',
-                startDate: new Date(),
-                hours: 1
+                description: 'description',
+                startTime,
+                endTime
             };
-            const res = await calendarService.addEvent(event);
+            const res = await calendarService.addEvent('alexbitrap@gmail.com', event);
 
             console.log(res)
         }
@@ -137,6 +145,12 @@ const cb = async (ctx, next) => {
             }, 'after');
 
             response_message = messages.start(_user.lang, _user, message_id);
+        }
+
+        if (user.status === 'subscription' || user.isAdmin) {
+            if (match[0] === 'order') {
+                await ctx.scene.enter('order');
+            }
         }
 
         if (response_message) {

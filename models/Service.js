@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ServiceSchema = new Schema({
+    tg_id: {
+        type: String
+    },
     title: {
         type: String,
         default: '_'
@@ -9,6 +12,9 @@ const ServiceSchema = new Schema({
     date: {
         type: Date,
         default: Date.now
+    },
+    limits: {
+        type: Number
     }
 }, { versionKey: false });
 
