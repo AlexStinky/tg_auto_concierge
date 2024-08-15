@@ -1,5 +1,6 @@
-const { google } = require('googleapis');
 const moment = require('moment');
+
+const { google } = require('googleapis');
 
 const messages = require('../scripts/messages');
 
@@ -45,6 +46,8 @@ class Calendar {
                 start_date,
                 end_date
             } = this.getDate(date, hours);
+
+            console.log(start_date, end_date)
 
             const res = await this.calendar.events.list({
                 calendarId,

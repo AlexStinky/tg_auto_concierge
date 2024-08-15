@@ -1,4 +1,4 @@
-const fs = require('fs');
+const moment = require('moment-timezone');
 
 const TelegrafI18n = require('telegraf-i18n/lib/i18n');
 
@@ -13,32 +13,37 @@ const i18n = new TelegrafI18n({
     }
 });
 
-const getTimeSlots = (excludedRanges, date) => {
-    const now = new Date();
+const getTimeSlots = (timeZone, excludedRanges, date) => {
+    const now = moment().tz(timeZone);
     const startOfDay = (excludedRanges.length > 0) ?
-        new Date(excludedRanges[0][0]) : new Date(date);
-    const endOfDay = new Date(startOfDay);
+        moment(excludedRanges[0][0]).tz(timeZone) : moment(date).tz(timeZone);
+    const endOfDay = moment(startOfDay);
 
-    if (now.getDate() === startOfDay.getDate() && now.getMonth() === startOfDay.getMonth()) {
-        startOfDay.setHours(now.getHours() + 1);
+    if (now.date() === startOfDay.date() && now.date() === startOfDay.date()) {
+        startOfDay.hours(now.hours() + 1);
     } else {
-        startOfDay.setHours(0);
+        startOfDay.hours(0);
     }
 
-    startOfDay.setMinutes(0);
-    startOfDay.setSeconds(0);
-    startOfDay.setMilliseconds(0);
+    startOfDay.set({
+        minute: 0,
+        second: 0
+    });
 
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.set({
+        hour: 23,
+        minute: 59,
+        second: 59
+    });
 
     const inline_keyboard = [];
 
     while (startOfDay <= endOfDay) {
-        const timeSlot = new Date(startOfDay);
+        const timeSlot = moment(startOfDay).tz(timeZone);
 
         const isExcluded = excludedRanges.some(range => {
-            const [start, end] = range.map(date => new Date(date));
-            start.setHours(start.getHours() - 1);
+            const [start, end] = range.map(date => moment(date).tz(timeZone));
+            start.hours(start.hours() - 1);
             return timeSlot >= start && timeSlot < end;
         });
 
@@ -54,7 +59,7 @@ const getTimeSlots = (excludedRanges, date) => {
             }
         }
 
-        startOfDay.setMinutes(startOfDay.getMinutes() + 30);
+        startOfDay.minutes(startOfDay.minutes() + 30);
     }
 
     return inline_keyboard;
@@ -259,7 +264,7 @@ const chooseDate = (lang, calendar, message_id = null) => {
     return message;
 };
 
-const chooseTime = (lang, free, start_date, message_id = null) => {
+const chooseTime = (lang, timeZone, free, start_date, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -285,7 +290,7 @@ const chooseTime = (lang, free, start_date, message_id = null) => {
     if (isBusy) {
         message.text = i18n.t(lang, 'dayIsAlreadyBusy_message');
     } else {
-        inline_keyboard = getTimeSlots(temp, start_date);
+        inline_keyboard = getTimeSlots(timeZone, temp, start_date);
     }
 
     inline_keyboard[inline_keyboard.length] = [

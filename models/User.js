@@ -38,6 +38,10 @@ const UserSchema = new Schema({
     phone: {
         type: Number
     },
+    time_zone: {
+        type: String,
+        default: 'Europe/Lisbon'
+    },
     calendar_id: {
         type: String
     }

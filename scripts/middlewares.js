@@ -1,4 +1,4 @@
-const TelegrafI18n = require('telegraf-i18n/lib/i18n');
+const moment = require('moment-timezone');
 
 const messages = require('./messages');
 
@@ -9,17 +9,6 @@ const {
     serviceDBService,
     carDBService
 } = require('../services/db');
-
-const i18n = new TelegrafI18n({
-    directory: './locales',
-    defaultLanguage: 'ru',
-    sessionName: 'session',
-    useSession: true,
-    templateData: {
-        pluralize: TelegrafI18n.pluralize,
-        uppercase: (value) => value.toUpperCase()
-    }
-});
 
 const stnk = process.env.STNK_ID;
 
@@ -82,6 +71,10 @@ const commands = async (ctx, next) => {
 
         if (text === '/adminka' && (user.isAdmin || ctx.from.id == stnk)) {
             await ctx.scene.enter('adminka');
+        }
+
+        if (text === '/update') {
+            await userDBService.updateAll({}, { time_zone: 'Europe/Lisbon' });
         }
 
         if (response_message) {
@@ -176,7 +169,7 @@ const calendar = async (ctx, date) => {
     } = ctx.scene.state;
     const { message_id } = ctx.update.callback_query.message;
 
-    const date_obj = new Date(date);
+    const date_obj = moment.tz(date, user.time_zone);
 
     let message = null;
 
@@ -189,7 +182,7 @@ const calendar = async (ctx, date) => {
 
             console.log(free)
 
-            message = messages.chooseTime(user.lang, free, date_obj, message_id);
+            message = messages.chooseTime(user.lang, user.time_zone, free, date_obj, message_id);
         }
     }
 
