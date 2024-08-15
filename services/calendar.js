@@ -1,4 +1,4 @@
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 const { google } = require('googleapis');
 
@@ -25,9 +25,9 @@ class Calendar {
         this.calendar = google.calendar({ version: 'v3', auth: this.JWT });
     }
 
-    getDate(date, hours) {
-        const start_date = moment(date);
-        const end_date = moment(date).add(hours, 'hours');
+    getDate(date, timeZone, hours = 0) {
+        const start_date = moment(date).tz(timeZone);
+        const end_date = moment(date).tz(timeZone).add(hours, 'hours');
 
         return {
             start_date,
@@ -40,14 +40,13 @@ class Calendar {
         console.log(calendars.data.items);
     }
 
-    async getEvents(start_date, end_date, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
+    async getEvents(date, timeZone, hours, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
         try {
-            /*const {
+            const {
                 start_date,
                 end_date
-            } = this.getDate(date, hours);
+            } = this.getDate(date, timeZone, hours);
 
-            console.log(start_date, end_date)*/
             console.log(start_date, end_date)
 
             const res = await this.calendar.events.list({
@@ -106,11 +105,11 @@ class Calendar {
             description: order._id,
             start: {
                 dateTime: start,
-                timeZone: 'UTC'
+                timeZone: data.timeZone
             },
             end: {
                 dateTime: end,
-                timeZone: 'UTC'
+                timeZone: data.timeZone
             }
         };
 

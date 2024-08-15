@@ -169,23 +169,18 @@ const calendar = async (ctx, date) => {
     } = ctx.scene.state;
     const { message_id } = ctx.update.callback_query.message;
 
-    const date_obj = moment.tz(date, user.time_zone);
-
     let message = null;
 
     if (order) {
         if (step === 3) {
             ctx.scene.state.step++;
-            ctx.scene.state.order.start_date = date_obj;
+            ctx.scene.state.order.start_date = date;
 
-            const end_date = moment.tz(date, user.time_zone);
-            end_date.add(24, 'hours');
-
-            const free = await calendarService.getEvents(date_obj, end_date);
+            const free = await calendarService.getEvents(date, user.time_zone, 24);
 
             console.log(free)
 
-            message = messages.chooseTime(user.lang, user.time_zone, free, date_obj, message_id);
+            message = messages.chooseTime(user.lang, user.time_zone, free, message_id);
         }
     }
 

@@ -13,10 +13,10 @@ const i18n = new TelegrafI18n({
     }
 });
 
-const getTimeSlots = (timeZone, excludedRanges, date) => {
+const getTimeSlots = (timeZone, excludedRanges) => {
     const now = moment().tz(timeZone);
     const startOfDay = (excludedRanges.length > 0) ?
-        moment(excludedRanges[0][0]).tz(timeZone) : moment(date).tz(timeZone);
+        moment(excludedRanges[0][0]).tz(timeZone) : moment(now).tz(timeZone);
     const endOfDay = moment(startOfDay).tz(timeZone);
 
     if (now.date() === startOfDay.date() && now.date() === startOfDay.date()) {
@@ -264,7 +264,7 @@ const chooseDate = (lang, calendar, message_id = null) => {
     return message;
 };
 
-const chooseTime = (lang, timeZone, free, start_date, message_id = null) => {
+const chooseTime = (lang, timeZone, free, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -290,7 +290,7 @@ const chooseTime = (lang, timeZone, free, start_date, message_id = null) => {
     if (isBusy) {
         message.text = i18n.t(lang, 'dayIsAlreadyBusy_message');
     } else {
-        inline_keyboard = getTimeSlots(timeZone, temp, start_date);
+        inline_keyboard = getTimeSlots(timeZone, temp);
     }
 
     inline_keyboard[inline_keyboard.length] = [

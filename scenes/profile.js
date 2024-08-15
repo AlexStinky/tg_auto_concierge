@@ -1,3 +1,5 @@
+const moment = require('moment-timezone');
+
 const Scene = require('telegraf/scenes/base');
 
 const middlewares = require('../scripts/middlewares');
@@ -34,7 +36,7 @@ const getServices = async () => {
         });
         const available = service.limits - orders;
 
-        if (available > 0) {
+        if (true || available > 0) {
             temp[temp.length] = {
                 id: service._id,
                 title: service.title,
@@ -60,7 +62,7 @@ function createOrder() {
         ctx.scene.state.step = 0;
         ctx.scene.state.order = {
             customer_id: user.tg_id,
-            timeZone: 'Europe/Lisbon'
+            timeZone: user.time_zone
         };
         ctx.scene.state.services = await getServices();
         ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
@@ -146,23 +148,24 @@ function createOrder() {
         const { order } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
-        const hour = Number(ctx.match[1]);
-        const minute = Number(ctx.match[2]);
-
-        /*order.start_date.setHours(hour);
-        order.start_date.setMinutes(minute);*/
-
-        order.start_date.set({
-            hour,
-            minute
-        });
+        const hours = Number(ctx.match[1]);
+        const minutes = Number(ctx.match[2]);
 
         const {
             start_date,
             end_date
-        } = calendarService.getDate(order.start_date, 1);
+        } = calendarService.getDate(order.start_date, user.time_zone);
 
-        //order.start_date = start_date;
+        start_date.set({
+            hour: hours,
+            minute: minutes
+        });
+        end_date.set({
+            hour: hours + 1,
+            minutes: minutes
+        });
+
+        order.start_date = start_date;
         order.end_date = end_date;
 
         ctx.scene.state.step++;
