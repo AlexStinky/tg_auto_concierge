@@ -54,3 +54,5 @@ confirm_button: 'Подтвердить'
 back_button: 'Назад'
 next_button: 'Вперед'
 cancel_button: 'Отмена'
+
+user_url: '<a href="tg://user?id=${id}">${username}</a>'

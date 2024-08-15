@@ -338,7 +338,7 @@ const order = (lang, key, data, message_id = null) => {
     return message;
 };
 
-const adminPanel = (lang, data, message_id = null) => {
+const adminPanel = (lang, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -358,7 +358,7 @@ const userInfo = (lang, user, message_id = null) => {
                 id: user.tg_id,
                 username: user.tg_username
             }),
-            isAdmin: (user.isAdmin) ? '' : '',
+            isAdmin: (user.isAdmin) ? '✅' : '❌',
             status: user.status
         }),
         extra: {}

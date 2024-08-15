@@ -1,12 +1,20 @@
 const Scene = require('telegraf/scenes/base');
 
 const messages = require('../scripts/messages');
+const middlewares = require('../scripts/middlewares');
 
-const { userDBService } = require('../services/db');
+const {
+    userDBService,
+    carDBService,
+    serviceDBService
+} = require('../services/db');
 const { sender } = require('../services/sender');
 
 function adminPanel() {
     const adminka = new Scene('adminka');
+
+    adminka.use(middlewares.start);
+    adminka.use(middlewares.commands);
 
     adminka.enter(async (ctx) => {
         const { user } = ctx.state;
@@ -38,7 +46,10 @@ function adminPanel() {
 
             const message = messages.userInfo(user.lang, check);
 
-            await ctx.replyWithHTML(message.text, message.extra);
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
         }
     });
 
@@ -61,7 +72,10 @@ function adminPanel() {
 
             const message = messages.userInfo(user.lang, check);
 
-            await ctx.replyWithHTML(message.text, message.extra);
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
         }
     });
 
@@ -90,6 +104,8 @@ function adminPanel() {
             tg_id: ctx.from.id,
             title: 'Помыть машину'
         });
+
+        await ctx.replyWithHTML('Done!');
     });
 
     return adminka;
