@@ -16,6 +16,7 @@
     "mongoose": "^8.1.2",
     "node-fetch": "^2.6.1",
     "telegraf": "^3.38.0",
+    "telegraf-calendar-telegram": "^2.0.2",
     "telegraf-i18n": "^6.6.0",
     "telegraf-ratelimit": "^2.0.0",
     "telegraf-session-local": "^2.1.0",

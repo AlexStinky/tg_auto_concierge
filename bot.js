@@ -1,5 +1,5 @@
 require('dotenv').config();
-require('./scripts/logger').start();
+//require('./scripts/logger').start();
 
 require('./services/calendar');
 
@@ -17,7 +17,11 @@ const middlewares = require('./scripts/middlewares');
 
 const { sender } = require('./services/sender');
 
-const stage = new Stage([]);
+const profile = require('./scenes/profile');
+
+const stage = new Stage([
+    profile.createOrder()
+]);
 
 const bot = new Telegraf(process.env.BOT_TOKEN, { handlerTimeout: 100 });
 
@@ -64,6 +68,7 @@ bot.telegram.getMe().then((botInfo) => {
 });
 
 sender.create(bot);
+sender.calendar.setDateListener(middlewares.calendar);
 
 (() => {
     const fs = require('fs');

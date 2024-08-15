@@ -13,6 +13,53 @@ const i18n = new TelegrafI18n({
     }
 });
 
+const getTimeSlots = (excludedRanges, date) => {
+    const now = new Date();
+    const startOfDay = (excludedRanges.length > 0) ?
+        new Date(excludedRanges[0][0]) : new Date(date);
+    const endOfDay = new Date(startOfDay);
+
+    if (now.getDate() === startOfDay.getDate() && now.getMonth() === startOfDay.getMonth()) {
+        startOfDay.setHours(now.getHours() + 1);
+    } else {
+        startOfDay.setHours(0);
+    }
+
+    startOfDay.setMinutes(0);
+    startOfDay.setSeconds(0);
+    startOfDay.setMilliseconds(0);
+
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const inline_keyboard = [];
+
+    while (startOfDay <= endOfDay) {
+        const timeSlot = new Date(startOfDay);
+
+        const isExcluded = excludedRanges.some(range => {
+            const [start, end] = range.map(date => new Date(date));
+            start.setHours(start.getHours() - 1);
+            return timeSlot >= start && timeSlot < end;
+        });
+
+        if (!isExcluded) {
+            const time = timeSlot.toISOString().slice(11, 16);
+            const button = { text: time, callback_data: `time-${time}` };
+            const temp = inline_keyboard[inline_keyboard.length - 1];
+
+            if (!temp || temp.length % 7 === 0) {
+                inline_keyboard[inline_keyboard.length] = [button];
+            } else {
+                inline_keyboard[inline_keyboard.length - 1][temp.length] = button;
+            }
+        }
+
+        startOfDay.setMinutes(startOfDay.getMinutes() + 30);
+    }
+
+    return inline_keyboard;
+};
+
 const paginations = (lang, inline_keyboard, data, page, key, size = 5) => {
     const length = data.length;
 
@@ -152,7 +199,7 @@ const cars = (lang, data, page, message_id = null) => {
     let inline_keyboard = data.reduce((acc, el) => {
         acc[acc.length] = [{
             text: el.brand + ' ' + el.model,
-            callback_data: `${key}-${el.id}`
+            callback_data: `${key}-${el._id}`
         }];
 
         return acc;
@@ -191,11 +238,92 @@ const location = (lang, message_id = null) => {
     return message;
 };
 
-const checkOrder = (lang, data, message_id = null) => {
+const chooseDate = (lang, calendar, message_id = null) => {
+    const today = new Date();
+    const minDate = new Date();
+    const maxDate = new Date();
+    maxDate.setMonth(today.getMonth() + 6);
+
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
-        text: i18n.t(lang, 'checkOrder_message', data),
+        text: i18n.t(lang, 'chooseDate_message'),
+        extra: calendar.setMinDate(minDate).setMaxDate(maxDate).getCalendar()
+    };
+
+    inline_keyboard = message.extra.reply_markup.inline_keyboard;
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
+    ];
+
+    return message;
+};
+
+const chooseTime = (lang, free, start_date, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'chooseTime_message'),
+        extra: {}
+    };
+    let isBusy = false, inline_keyboard = [], temp = [];
+
+    for (let i = 0; i < free.length; i++) {
+        const el = free[i];
+
+        if (el.start.date || el.end.date) {
+            isBusy = true;
+            break;
+        } else {
+            const start = el.start.dateTime;
+            const end = el.end.dateTime;
+
+            temp[temp.length] = [start, end];
+        }
+    }
+
+    if (isBusy) {
+        message.text = i18n.t(lang, 'dayIsAlreadyBusy_message');
+    } else {
+        inline_keyboard = getTimeSlots(temp, start_date);
+    }
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const order = (lang, key, data, message_id = null) => {
+    const dateOptions = {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric'
+    };
+    const temp = {
+        service: data.summary,
+        car: data.car.brand + ' ' + data.car.model,
+        location: (typeof data.location === 'object') ?
+            JSON.stringify(data.location) : data.location,
+        startDate: new Date(data.start_date).toLocaleDateString('ru-RU', dateOptions),
+        endDate: new Date(data.end_date).toLocaleDateString('ru-RU', dateOptions)
+    };
+    const message = {
+        type: (typeof data.location === 'object') ?
+            'location' : (message_id) ?
+            'edit_text' : 'text',
+        message_id,
+        location: data.location,
+        text: i18n.t(lang, key) + '\n' + i18n.t(lang, 'order_message', temp),
         extra: {
             reply_markup: {
                 inline_keyboard: [
@@ -217,5 +345,7 @@ module.exports = {
     services,
     cars,
     location,
-    checkOrder
+    chooseDate,
+    chooseTime,
+    order
 }

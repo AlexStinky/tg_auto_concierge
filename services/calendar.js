@@ -1,6 +1,14 @@
 const { google } = require('googleapis');
 const moment = require('moment');
 
+const messages = require('../scripts/messages');
+
+const {
+    userDBService,
+    orderDBService
+} = require('./db');
+const { sender } = require('./sender');
+
 class Calendar {
     constructor() {
         this.JWT = new google.auth.JWT(
@@ -16,16 +24,32 @@ class Calendar {
         this.calendar = google.calendar({ version: 'v3', auth: this.JWT });
     }
 
+    getDate(date, hours) {
+        const start_date = moment(date);
+        const end_date = moment(date).add(hours, 'hours');
+
+        return {
+            start_date,
+            end_date
+        };
+    }
+
     async getCalendars() {
         const calendars = await this.calendar.calendarList.list();
         console.log(calendars.data.items);
     }
 
-    async getEvents(calendarId = 'primary', maxResults = 100) {
+    async getEvents(date, hours, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
         try {
+            const {
+                start_date,
+                end_date
+            } = this.getDate(date, hours);
+
             const res = await this.calendar.events.list({
                 calendarId,
-                timeMin: new Date().toISOString(),
+                timeMin: start_date.toISOString(),
+                timeMax: end_date.toISOString(),
                 maxResults,
                 singleEvents: true,
                 orderBy: 'startTime',
@@ -40,22 +64,22 @@ class Calendar {
             console.error('[getEvents] The API returned an error:', err.errors ? err.errors : err);
         }
 
-        return null;
+        return [];
     }
 
-    async getBusy(days = 30) {
+    async getBusy(startDate, endDate, id = process.env.GOOGLE_EMAIL) {
         try {
             const res = await this.calendar.freebusy.query({
                 requestBody: {
-                    timeMin: new Date().toISOString(),
-                    timeMax: new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString(),
-                    items: [{ id: 'primary' }]
+                    timeMin: startDate.toISOString(),
+                    timeMax: endDate.toISOString(),
+                    items: [{ id }]
                 }
             });
 
-            const busyTimes = res.data.calendars.primary.busy;
+            console.log(res.data)
 
-            console.log(busyTimes)
+            const busyTimes = res.data.calendars[id].busy;
 
             if (busyTimes.length) {
                 return busyTimes;
@@ -67,17 +91,21 @@ class Calendar {
         return null;
     }
 
-    async addEvent(calendarId = 'primary', data) {
+    async addEvent(data, calendarId = process.env.GOOGLE_EMAIL) {
+        const start = data.start_date.toISOString();
+        const end = data.end_date.toISOString();
+
+        const order = await orderDBService.create(data);
         const resource = {
             summary: data.summary,
             location: data.location,
-            description: data.description,
+            description: order._id,
             start: {
-                dateTime: data.startTime.toISOString(),
+                dateTime: start,
                 timeZone: 'UTC',
             },
             end: {
-                dateTime: data.endTime.toISOString(),
+                dateTime: end,
                 timeZone: 'UTC',
             }
         };
@@ -89,8 +117,19 @@ class Calendar {
                 calendarId,
                 resource
             });
+            const driver = await userDBService.get({ tg_id: data.driver_id });
 
-            return eventRes.data.htmlLink;
+            if (driver) {
+                const message = messages.order(driver.lang, 'newOrder_message', data);
+                message.extra = {};
+
+                sender.enqueue({
+                    chat_id: driver.tg_id,
+                    message
+                });
+
+                return eventRes.data.htmlLink;
+            }
         } catch (err) {
             console.error('[add] The API returned an error:', err.errors ? err.errors : err);
         }
@@ -98,7 +137,7 @@ class Calendar {
         return null;
     }
 
-    async deleteEvent(calendarId = 'primary', eventId) {
+    async deleteEvent(eventId, calendarId = process.env.GOOGLE_EMAIL) {
         try {
             await this.calendar.events.delete({
                 calendarId,
@@ -111,8 +150,6 @@ class Calendar {
 }
 
 const calendarService = new Calendar();
-calendarService.getEvents();
-calendarService.getCalendars();
 
 module.exports = {
     calendarService

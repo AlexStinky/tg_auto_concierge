@@ -8,16 +8,24 @@ buySubscription_message: 'Оплатите подписку с помощью к
 chooseService_message: 'Выберите услугу:'
 chooseCar_message: 'Выберите авто:'
 enterLocation_message: 'Введите адрес или отправьте гео-локацию:'
+chooseDate_message: 'Выберите день:'
+chooseTime_message: 'Выберите время:'
 
-checkOrder_message: 'Перед тем как закончить, проверьте или все верно:
+dayIsAlreadyBusy_message: 'День уже занят'
+driversOrCarNotFound_message: 'Нет свободных водителей или вы не добавили автомобиль'
 
-${service}
+checkOrder_message: 'Проверьте ваш заказ:'
+newOrder_message: 'Новый заказ:'
+
+order_message: '${service}
 
 ${car}
 
 ${location}
 
 ${startDate} - ${endDate}'
+
+eventIsAdded_message: 'Событие добавлено!'
 
 aboutService_button: 'О сервисе'
 buySubscription_button: 'Купить подписку'
@@ -31,5 +39,8 @@ editCars_button: 'Редактировать авто'
 editPersonal_button: 'Редактировать личные данные'
 calendar_button: 'Календарь'
 
+confirm_button: 'Подтвердить'
+
 back_button: 'Назад'
 next_button: 'Вперед'
+cancel_button: 'Отмена'

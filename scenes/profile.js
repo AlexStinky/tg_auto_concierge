@@ -9,6 +9,7 @@ const {
     serviceDBService,
     orderDBService
 } = require('../services/db');
+const { calendarService } = require('../services/calendar');
 const { sender } = require('../services/sender');
 
 const getServices = async () => {
@@ -26,7 +27,6 @@ const getServices = async () => {
         const service = services[i];
         const orders = await orderDBService.getCount({
             service_id: service._id,
-            status: 'completed',
             creation_date: {
                 $gt: startMonth,
                 $lt: now
@@ -64,7 +64,7 @@ function createOrder() {
         ctx.scene.state.services = await getServices();
         ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
 
-        const message = messages.services(user.lang, temp, 1);
+        const message = messages.services(user.lang, ctx.scene.state.services, 0);
 
         sender.enqueue({
             chat_id: ctx.from.id,
@@ -74,21 +74,31 @@ function createOrder() {
 
     order.action(/(srv|car)-([a-z0-9]+)/, async (ctx) => {
         const { user } = ctx.state;
-        const { cars } = ctx.scene.state;
+        const {
+            order,
+            cars,
+        } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
         const key = ctx.match[1];
-        const id = ctx.match[2];
+        const _id = ctx.match[2];
 
         let message = null;
 
         if (key === 'srv') {
-            ctx.scene.state.order.service_id = id;
+            const service = await serviceDBService.get({ _id });
 
-            message = messages.cars(user.lang, cars, 1, message_id);
+            order.service_id = _id;
+            order.summary = service.title;
+
+            message = messages.cars(user.lang, cars, 0, message_id);
         } else if (key === 'car') {
-            ctx.scene.state.order.car_id = id;
-            ctx.scene.state.order.driver_id = id;
+            const car = await carDBService.get({ _id });
+            const driver = await userDBService.get({ status: 'driver' });
+
+            order.car_id = _id;
+            order.driver_id = driver.tg_id;
+            order.car = car;
 
             message = messages.location(user.lang, message_id);
         }
@@ -130,26 +140,124 @@ function createOrder() {
         }
     });
 
-    order.on('text', async (ctx) => {
+    order.action(/time-([0-9]+):([0-9]+)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { order } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const hours = Number(ctx.match[1]);
+        const minutes = Number(ctx.match[2]);
+
+        order.start_date.setHours(hours);
+        order.start_date.setMinutes(minutes);
+
+        const {
+            start_date,
+            end_date
+        } = calendarService.getDate(order.start_date, 1);
+
+        order.start_date = start_date;
+        order.end_date = end_date;
+
+        ctx.scene.state.step++;
+
+        const message = messages.order(user.lang, 'checkOrder_message', order, message_id);
+
+        if (message.type === 'location') {
+            sender.deleteMessage(ctx.from.id, message_id);
+        }
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    order.action('confirm', async (ctx) => {
+        const { user } = ctx.state;
+        const { order } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const res = await calendarService.addEvent(order);
+
+        if (res) {
+            await ctx.answerCbQuery(ctx.i18n.t('eventIsAdded_message'), true);
+        }
+
+        const message = messages.start(user.lang, user, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+
+        await ctx.scene.leave();
+    });
+
+    order.action('back', async (ctx) => {
         const { user } = ctx.state;
         const {
             step,
-            order
+            services,
+            cars
         } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        if (step > 0) {
+            let message = null;
+
+            ctx.scene.state.step--;
+
+            if (step === 1) {
+                message = messages.services(user.lang, services, 0, message_id);
+            } else if (step === 2) {
+                message = messages.cars(user.lang, cars, 0, message_id);
+            } else if (step === 3) {
+                message = messages.location(user.lang, message_id);
+            } else if (step === 4 || step === 5 || step === 6) {
+                ctx.scene.state.step = 3;
+                message = messages.chooseDate(user.lang, sender.calendar, message_id);
+            }
+
+            if (message) {
+                sender.enqueue({
+                    chat_id: ctx.from.id,
+                    message
+                });
+            }
+        }
+    });
+
+    order.on('location', async (ctx) => {
+        const { user } = ctx.state;
+        const { step } = ctx.scene.state;
+        const { location } = ctx.update.message;
+
+        if (step === 2) {
+            ctx.scene.state.step++;
+            ctx.scene.state.order.location = location;
+
+            const message = messages.chooseDate(user.lang, sender.calendar);
+
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        }
+    });
+
+    order.on('text', async (ctx) => {
+        const { user } = ctx.state;
+        const { step } = ctx.scene.state;
+        const { text } = ctx.message;
 
         let message = null;
 
         if (step === 2) {
-            /*const service = await serviceDBService.get({ _id: order.service_id });
-            const car = await carDBService.get({ _id: order.car_id });
-            const temp = {
-                service: service.title,
-                car: car.brand + ' ' + car.model,
-                location: order.location,
-                startDate: order.start_date.toLocaleDateString('ru-RU'),
-                endDate: order.end_date.toLocaleDateString('ru-RU')
-            };
-            message = messages.checkOrder(user.lang, order);*/
+            ctx.scene.state.step++;
+            ctx.scene.state.order.location = text;
+
+            message = messages.chooseDate(user.lang, sender.calendar);
         }
 
         if (message) {

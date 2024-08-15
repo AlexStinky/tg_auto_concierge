@@ -14,7 +14,8 @@ const ServiceSchema = new Schema({
         default: Date.now
     },
     limits: {
-        type: Number
+        type: Number,
+        default: 10
     }
 }, { versionKey: false });
 

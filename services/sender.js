@@ -1,3 +1,5 @@
+const Calendar = require('telegraf-calendar-telegram');
+
 const { Queue } = require('../modules/queue');
 
 const { userDBService } = require('./db');
@@ -23,7 +25,17 @@ class Sender extends Queue {
     }
 
     async create(bot) {
-        return this.bot = bot;
+        this.bot = bot;
+        this.calendar = new Calendar(bot, {
+            startWeekDay: 1,
+            weekDayNames: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+            monthNames: [
+                'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+            ]
+        });
+
+        return this.bot;
     }
 
     async start() {
@@ -162,6 +174,14 @@ class Sender extends Queue {
                 case 'invoice':
                     res = await this.bot.telegram.sendInvoice(chatId, message, extra);
                     //await this.bot.telegram.sendMessage(chatId, text, extra);
+                    break;
+                case 'location':
+                    await this.bot.telegram.callApi('sendLocation', {
+                        chat_id: chatId,
+                        latitude: message.location.latitude,
+                        longitude: message.location.longitude
+                    });
+                    res = await this.bot.telegram.sendMessage(chatId, text, extra);
                     break;
                 default:
                     res = (message.text.length > MAX_LENGTH) ?

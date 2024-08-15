@@ -11,7 +11,10 @@ const OrderSchema = new Schema({
     driver_id: {
         type: String
     },
-    cat_id: {
+    car_id: {
+        type: String
+    },
+    event_id: {
         type: String
     },
     status: {
@@ -28,9 +31,7 @@ const OrderSchema = new Schema({
     end_date: {
         type: Date
     },
-    location: {
-        type: String
-    }
+    location: Object || String
 }, { versionKey: false });
 
 const Order = mongoose.model('Order', OrderSchema);

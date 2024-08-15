@@ -6,7 +6,8 @@ const { sender } = require('../services/sender');
 const { calendarService } = require('../services/calendar');
 const {
     userDBService,
-    serviceDBService
+    serviceDBService,
+    carDBService
 } = require('../services/db');
 
 const i18n = new TelegrafI18n({
@@ -80,20 +81,28 @@ const commands = async (ctx, next) => {
         }
 
         if (text === '/test') {
-            const startTime = new Date();
-            const endTime = new Date();
-            startTime.setDate(startTime.getDate() + 1);
-            endTime.setDate(endTime.getDate() + 1);
+            const start_date = new Date();
+            const end_date = new Date();
+            start_date.setDate(start_date.getDate() + 1);
+            end_date.setDate(end_date.getDate() + 1);
             const event = {
                 summary: 'Заказ водителя',
                 location: '123',
                 description: 'description',
-                startTime,
-                endTime
+                start_date,
+                end_date
             };
-            const res = await calendarService.addEvent('alexbitrap@gmail.com', event);
+            const res = await calendarService.addEvent(event);
 
             console.log(res)
+
+            /*await carDBService.create({
+                tg_id: ctx.from.id,
+                title: 'title'
+            });
+            await serviceDBService.create({
+                tg_id: ctx.from.id
+            });*/
         }
 
         if (response_message) {
@@ -149,7 +158,15 @@ const cb = async (ctx, next) => {
 
         if (user.status === 'subscription' || user.isAdmin) {
             if (match[0] === 'order') {
-                await ctx.scene.enter('order');
+                const drivers = await userDBService.getAll({ status: 'driver' });
+                const cars = await carDBService.getAll({ tg_id: ctx.from.id });
+
+                if (drivers.length && cars.length) {
+                    await ctx.deleteMessage();
+                    await ctx.scene.enter('order');
+                } else {
+                    await ctx.answerCbQuery(ctx.i18n.t('driversOrCarNotFound_message'), true);
+                }
             }
         }
 
@@ -172,8 +189,40 @@ const cb = async (ctx, next) => {
     return next();
 };
 
+const calendar = async (ctx, date) => {
+    const { user } = ctx.state;
+    const {
+        step,
+        order
+    } = ctx.scene.state;
+    const { message_id } = ctx.update.callback_query.message;
+
+    const date_obj = new Date(date);
+
+    let message = null;
+
+    if (order) {
+        if (step === 3) {
+            ctx.scene.state.step++;
+            ctx.scene.state.order.start_date = date_obj;
+
+            const free = await calendarService.getEvents(date, 24);
+
+            message = messages.chooseTime(user.lang, free, date_obj, message_id);
+        }
+    }
+
+    if (message) {
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    }
+};
+
 module.exports = {
     start,
     commands,
-    cb
+    cb,
+    calendar
 }
