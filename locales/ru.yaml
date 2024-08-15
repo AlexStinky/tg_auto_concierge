@@ -27,6 +27,16 @@ ${startDate} - ${endDate}'
 
 eventIsAdded_message: 'Событие добавлено!'
 
+adminPanel_message: '/admin USERNAME - сделать админом
+
+/driver USERNAME - сделать водителем'
+
+userInfo_message: '${user}
+
+Админ: ${isAdmin}
+
+Статус: ${status}'
+
 aboutService_button: 'О сервисе'
 buySubscription_button: 'Купить подписку'
 renewSubscription_message: 'Продлить подписку'

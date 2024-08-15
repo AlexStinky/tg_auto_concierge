@@ -338,6 +338,35 @@ const order = (lang, key, data, message_id = null) => {
     return message;
 };
 
+const adminPanel = (lang, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'adminPanel_message'),
+        extra: {}
+    };
+
+    return message;
+};
+
+const userInfo = (lang, user, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'userInfo_message', {
+            user: i18n.t(lang, 'user_url', {
+                id: user.tg_id,
+                username: user.tg_username
+            }),
+            isAdmin: (user.isAdmin) ? '' : '',
+            status: user.status
+        }),
+        extra: {}
+    };
+
+    return message;
+};
+
 module.exports = {
     start,
     about,
@@ -347,5 +376,7 @@ module.exports = {
     location,
     chooseDate,
     chooseTime,
-    order
+    order,
+    adminPanel,
+    userInfo
 }

@@ -18,9 +18,11 @@ const middlewares = require('./scripts/middlewares');
 const { sender } = require('./services/sender');
 
 const profile = require('./scenes/profile');
+const admin = require('./scenes/adminka');
 
 const stage = new Stage([
-    profile.createOrder()
+    profile.createOrder(),
+    admin.adminPanel()
 ]);
 
 const bot = new Telegraf(process.env.BOT_TOKEN, { handlerTimeout: 100 });

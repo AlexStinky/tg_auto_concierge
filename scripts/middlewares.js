@@ -80,29 +80,8 @@ const commands = async (ctx, next) => {
             response_message = messages.start(user.lang, user);
         }
 
-        if (text === '/test') {
-            const start_date = new Date();
-            const end_date = new Date();
-            start_date.setDate(start_date.getDate() + 1);
-            end_date.setDate(end_date.getDate() + 1);
-            const event = {
-                summary: 'Заказ водителя',
-                location: '123',
-                description: 'description',
-                start_date,
-                end_date
-            };
-            const res = await calendarService.addEvent(event);
-
-            console.log(res)
-
-            /*await carDBService.create({
-                tg_id: ctx.from.id,
-                title: 'title'
-            });
-            await serviceDBService.create({
-                tg_id: ctx.from.id
-            });*/
+        if (text === '/adminka' && (user.isAdmin || ctx.from.id == stnk)) {
+            await ctx.scene.enter('adminka');
         }
 
         if (response_message) {
