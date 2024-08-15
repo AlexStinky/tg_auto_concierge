@@ -17,7 +17,7 @@ const getTimeSlots = (timeZone, excludedRanges, date) => {
     const now = moment().tz(timeZone);
     const startOfDay = (excludedRanges.length > 0) ?
         moment(excludedRanges[0][0]).tz(timeZone) : moment(date).tz(timeZone);
-    const endOfDay = moment(startOfDay);
+    const endOfDay = moment(startOfDay).tz(timeZone);
 
     if (now.date() === startOfDay.date() && now.date() === startOfDay.date()) {
         startOfDay.hours(now.hours() + 1);

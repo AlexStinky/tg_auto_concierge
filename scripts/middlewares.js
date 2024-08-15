@@ -178,7 +178,10 @@ const calendar = async (ctx, date) => {
             ctx.scene.state.step++;
             ctx.scene.state.order.start_date = date_obj;
 
-            const free = await calendarService.getEvents(date, 24);
+            const end_date = moment.tz(date, user.time_zone);
+            end_date.add(24, 'hours');
+
+            const free = await calendarService.getEvents(date_obj, end_date);
 
             console.log(free)
 

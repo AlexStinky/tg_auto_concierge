@@ -40,13 +40,14 @@ class Calendar {
         console.log(calendars.data.items);
     }
 
-    async getEvents(date, hours, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
+    async getEvents(start_date, end_date, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
         try {
-            const {
+            /*const {
                 start_date,
                 end_date
             } = this.getDate(date, hours);
 
+            console.log(start_date, end_date)*/
             console.log(start_date, end_date)
 
             const res = await this.calendar.events.list({

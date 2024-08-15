@@ -146,18 +146,23 @@ function createOrder() {
         const { order } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
-        const hours = Number(ctx.match[1]);
-        const minutes = Number(ctx.match[2]);
+        const hour = Number(ctx.match[1]);
+        const minute = Number(ctx.match[2]);
 
-        order.start_date.setHours(hours);
-        order.start_date.setMinutes(minutes);
+        /*order.start_date.setHours(hour);
+        order.start_date.setMinutes(minute);*/
+
+        order.start_date.set({
+            hour,
+            minute
+        });
 
         const {
             start_date,
             end_date
         } = calendarService.getDate(order.start_date, 1);
 
-        order.start_date = start_date;
+        //order.start_date = start_date;
         order.end_date = end_date;
 
         ctx.scene.state.step++;
