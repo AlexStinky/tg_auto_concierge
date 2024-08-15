@@ -44,7 +44,6 @@ const getTimeSlots = (timeZone, excludedRanges, date) => {
         const isExcluded = excludedRanges.some(range => {
             const [start, end] = range.map(date => moment(date).tz(timeZone));
             start.hours(start.hours() - 1);
-            console.log(start)
             return timeSlot >= start && timeSlot < end;
         });
 
