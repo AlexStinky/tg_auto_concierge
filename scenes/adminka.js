@@ -14,7 +14,6 @@ function adminPanel() {
     const adminka = new Scene('adminka');
 
     adminka.use(middlewares.start);
-    adminka.use(middlewares.commands);
 
     adminka.enter(async (ctx) => {
         const { user } = ctx.state;

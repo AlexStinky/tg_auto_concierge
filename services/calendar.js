@@ -102,11 +102,11 @@ class Calendar {
             description: order._id,
             start: {
                 dateTime: start,
-                timeZone: 'UTC',
+                timeZone: data.timeZone
             },
             end: {
                 dateTime: end,
-                timeZone: 'UTC',
+                timeZone: data.timeZone
             }
         };
 

@@ -187,6 +187,8 @@ const calendar = async (ctx, date) => {
 
             const free = await calendarService.getEvents(date, 24);
 
+            console.log(free)
+
             message = messages.chooseTime(user.lang, free, date_obj, message_id);
         }
     }

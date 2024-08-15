@@ -59,7 +59,8 @@ function createOrder() {
 
         ctx.scene.state.step = 0;
         ctx.scene.state.order = {
-            customer_id: user.tg_id
+            customer_id: user.tg_id,
+            timeZone: 'Europe/Lisbon'
         };
         ctx.scene.state.services = await getServices();
         ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });

@@ -65,8 +65,9 @@ bot.use(middlewares.cb);
 bot.catch(err => console.error(err));
 
 bot.telegram.getMe().then((botInfo) => {
+    const now = new Date();
     const botUsername = botInfo.username;
-    console.log(`Username: @${botUsername}`);
+    console.log(`Username: @${botUsername}\n${now}`);
 });
 
 sender.create(bot);
