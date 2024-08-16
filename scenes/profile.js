@@ -36,7 +36,7 @@ const getServices = async () => {
         });
         const available = service.limits - orders;
 
-        if (true || available > 0) {
+        if (available > 0) {
             temp[temp.length] = {
                 id: service._id,
                 title: service.title,
