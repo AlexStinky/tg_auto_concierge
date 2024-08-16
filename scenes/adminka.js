@@ -78,7 +78,7 @@ function adminPanel() {
         }
     });
 
-    adminka.hears('addCars', async (ctx) => {
+    adminka.command('addCar', async (ctx) => {
         /*const start_date = new Date();
         const end_date = new Date();
         start_date.setDate(start_date.getDate() + 1);
@@ -98,10 +98,6 @@ function adminPanel() {
             tg_id: ctx.from.id,
             brand: 'Mercedes',
             model: 'W136'
-        });
-        await serviceDBService.create({
-            tg_id: ctx.from.id,
-            title: 'Помыть машину'
         });
 
         await ctx.replyWithHTML('Done!');

@@ -3,7 +3,8 @@ const Schema = mongoose.Schema;
 
 const ServiceSchema = new Schema({
     tg_id: {
-        type: String
+        type: String,
+        required: true
     },
     title: {
         type: String,

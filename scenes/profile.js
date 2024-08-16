@@ -1,5 +1,3 @@
-const moment = require('moment-timezone');
-
 const Scene = require('telegraf/scenes/base');
 
 const middlewares = require('../scripts/middlewares');
@@ -49,6 +47,58 @@ const getServices = async () => {
     return temp;
 };
 
+function changePersonal() {
+    const personal = new Scene('personal');
+
+    personal.use(middlewares.start);
+    personal.use(middlewares.commands);
+    personal.use(middlewares.cb);
+
+    personal.enter(async (ctx) => {
+        const user = await userDBService.get({ tg_id: ctx.from.id });
+
+        const message = messages.personal(user.lang, user, null);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    personal.action(/change-(fullname|phone)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        ctx.scene.state.key = ctx.match[1];
+
+        const message = messages.personal(user.lang, user, ctx.scene.state.key, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    personal.action('back', async (ctx) => {
+        await ctx.deleteMessage();
+        await ctx.scene.reenter();
+    });
+
+    personal.on('text', async (ctx) => {
+        const { key } = ctx.scene.state;
+        const { message_id } = ctx.update.message;
+        const { text } = ctx.message;
+
+        await userDBService.update({ tg_id: ctx.from.id }, { [key]: text });
+
+        sender.deleteMessage(ctx.from.id, message_id - 1);
+
+        await ctx.scene.reenter();
+    });
+
+    return personal;
+}
+
 function createOrder() {
     const order = new Scene('order');
 
@@ -62,7 +112,9 @@ function createOrder() {
         ctx.scene.state.step = 0;
         ctx.scene.state.order = {
             customer_id: user.tg_id,
-            timeZone: user.time_zone
+            fullname: user.fullname,
+            phone: user.phone,
+            time_zone: user.time_zone
         };
         ctx.scene.state.services = await getServices();
         ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
@@ -91,19 +143,19 @@ function createOrder() {
         if (key === 'srv') {
             const service = await serviceDBService.get({ _id });
 
-            order.service_id = _id;
-            order.summary = service.title;
+            order.service = service.title;
 
-            message = messages.cars(user.lang, cars, 0, message_id);
+            message = messages.cars(user.lang, cars, 0, false, message_id);
         } else if (key === 'car') {
             const car = await carDBService.get({ _id });
             const driver = await userDBService.get({ status: 'driver' });
 
-            order.car_id = _id;
-            order.driver_id = driver.tg_id;
-            order.car = car;
+            if (car && driver) {
+                order.car = car.brand + ' ' + car.model;
+                order.driver_id = driver.tg_id;
 
-            message = messages.location(user.lang, message_id);
+                message = messages.location(user.lang, message_id);
+            }
         }
 
         ctx.scene.state.step++;
@@ -132,7 +184,7 @@ function createOrder() {
         if (key === 'srv') {
             message = messages.services(user.lang, services, page, message_id);
         } else if (key === 'car') {
-            message = messages.cars(user.lang, cars, page, message_id);
+            message = messages.cars(user.lang, cars, page, false, message_id);
         }
 
         if (message) {
@@ -220,7 +272,7 @@ function createOrder() {
             if (step === 1) {
                 message = messages.services(user.lang, services, 0, message_id);
             } else if (step === 2) {
-                message = messages.cars(user.lang, cars, 0, message_id);
+                message = messages.cars(user.lang, cars, 0, false, message_id);
             } else if (step === 3) {
                 message = messages.location(user.lang, message_id);
             } else if (step === 4 || step === 5 || step === 6) {
@@ -280,6 +332,150 @@ function createOrder() {
     return order;
 }
 
+function addCar() {
+    const car = new Scene('car');
+
+    car.use(middlewares.start);
+    car.use(middlewares.commands);
+    car.use(middlewares.cb);
+
+    car.enter(async (ctx) => {
+        const { user } = ctx.state;
+
+        ctx.scene.state.step = 0;
+        ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
+
+        const message = messages.cars(user.lang, ctx.scene.state.cars, 0, true);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    car.action('add', async (ctx) => {
+        const { user } = ctx.state;
+        const { step } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        ctx.scene.state.data = {
+            tg_id: ctx.from.id
+        };
+
+        const message = messages.addCar(user.lang, step, ctx.scene.state.data, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    car.action(/car-([0-9a-z]+)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { step } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const _id = ctx.match[1];
+
+        ctx.scene.state.data = await carDBService.get({ _id });
+
+        const message = messages.addCar(user.lang, step, ctx.scene.state.data, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    car.action(/next-([a-z]+)-([0-9]+)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { cars } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const page = Number(ctx.match[2]);
+
+        const message = messages.cars(user.lang, cars, page, true, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    car.action('confirm', async (ctx) => {
+        const { user } = ctx.state;
+        const { data } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        if (data._id) {
+            await carDBService.update({ _id: data._id }, data);
+        } else {
+            await carDBService.create(data);
+        }
+
+        const message = messages.start(user.lang, user, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+
+        await ctx.answerCbQuery(ctx.i18n.t('carIsAdded_message'), true);
+        await ctx.scene.leave();
+    });
+
+    car.action('back', async (ctx) => {
+        const { user } = ctx.state;
+        const { data } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        ctx.scene.state.step--;
+
+        const message = messages.addCar(user.lang, ctx.scene.state.step, data, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    car.on('text', async (ctx) => {
+        const { user } = ctx.state;
+        const {
+            step,
+            data
+        } = ctx.scene.state;
+        const { text } = ctx.message;
+
+        ctx.scene.state.step++;
+
+        if (step === 0) {
+            data.brand = text;
+        } else if (step === 1) {
+            data.model = text;
+        } else if (step === 2) {
+            data.color = text;
+        } else if (step === 3) {
+            data.registration_number = text;
+        } else if (step === 4) {
+            data.VIN = text;
+        } else if (step === 5) {
+            data.techpassport = text;
+        }
+
+        const message = messages.addCar(user.lang, ctx.scene.state.step, data);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    return car;
+}
+
 module.exports = {
-    createOrder
+    changePersonal,
+    createOrder,
+    addCar
 }

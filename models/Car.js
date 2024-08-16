@@ -4,9 +4,7 @@ const Schema = mongoose.Schema;
 const CarSchema = new Schema({
     tg_id: {
         type: String,
-        required: true,
-        unique: true,
-        index: true,
+        required: true
     },
     date: {
         type: Date,
@@ -24,15 +22,11 @@ const CarSchema = new Schema({
         type: String,
         default: '_'
     },
-    VIN: {
-        type: String,
-        default: '_'
-    },
-    numbers: {
-        type: String,
-        default: '_'
-    },
     registration_number: {
+        type: String,
+        default: '_'
+    },
+    VIN: {
         type: String,
         default: '_'
     },

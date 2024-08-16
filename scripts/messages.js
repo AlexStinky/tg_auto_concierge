@@ -25,10 +25,8 @@ const getTimeSlots = (timeZone, excludedRanges) => {
     while (now <= endOfDay) {
         const timeSlot = moment(now);
 
-        // Проверяем, попадает ли текущий временной промежуток в какой-либо из исключаемых диапазонов
         const isExcluded = excludedRanges.some(range => {
             const [start, end] = range.map(date => {
-                // Попытка определить временную зону из строки, если не указана, использовать UTC
                 const momentDate = moment(date);
                 if (!momentDate.isValid()) {
                     return moment.tz(date, 'UTC').tz(timeZone);
@@ -50,7 +48,7 @@ const getTimeSlots = (timeZone, excludedRanges) => {
             }
         }
 
-        now.add(30, 'minutes'); // Увеличиваем на 30 минут
+        now.add(30, 'minutes');
     }
 
     return inline_keyboard;
@@ -183,7 +181,7 @@ const services = (lang, data, page, message_id = null) => {
     return message;
 };
 
-const cars = (lang, data, page, message_id = null) => {
+const cars = (lang, data, page, isAdd = false, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -192,14 +190,17 @@ const cars = (lang, data, page, message_id = null) => {
     };
     const key = 'car';
 
-    let inline_keyboard = data.reduce((acc, el) => {
+    let inline_keyboard = (isAdd) ?
+        [[{ text: i18n.t(lang, 'addNewCar_button'), callback_data: 'add' }]] : [];
+
+    inline_keyboard = data.reduce((acc, el) => {
         acc[acc.length] = [{
             text: el.brand + ' ' + el.model,
             callback_data: `${key}-${el._id}`
         }];
 
         return acc;
-    }, []);
+    }, inline_keyboard);
 
     inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
 
@@ -298,20 +299,15 @@ const chooseTime = (lang, timeZone, free, message_id = null) => {
 };
 
 const order = (lang, key, data, message_id = null) => {
-    const dateOptions = {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric'
-    };
     const temp = {
-        service: data.summary,
-        car: data.car.brand + ' ' + data.car.model,
+        fullname: data.fullname,
+        phone: data.phone,
+        service: data.service,
+        car: data.car,
         location: (typeof data.location === 'object') ?
             JSON.stringify(data.location) : data.location,
-        startDate: data.start_date.format(DEFAULT_DATE_FORMAT),
-        endDate: data.end_date.format(DEFAULT_DATE_FORMAT)
+        startDate: moment(data.start_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT),
+        endDate: moment(data.end_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT)
     };
     const message = {
         type: (typeof data.location === 'object') ?
@@ -328,6 +324,102 @@ const order = (lang, key, data, message_id = null) => {
                     [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
                 ]
             }
+        }
+    };
+
+    if (key && key.includes('remind')) {
+        message.extra = {};
+    }
+
+    return message;
+};
+
+const addCar = (lang, step, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: '',
+        extra: {}
+    };
+    let inline_keyboard = [];
+
+    if (step === 0) {
+        message.text = i18n.t(lang, 'enterCarBrand_message');
+    } else if (step === 1) {
+        message.text = i18n.t(lang, 'enterCarModel_message');
+    } else if (step === 2) {
+        message.text = i18n.t(lang, 'enterCarColor_message');
+    } else if (step === 3) {
+        message.text = i18n.t(lang, 'enterCarRegistrationNumber_message');
+    } else if (step === 4) {
+        message.text = i18n.t(lang, 'enterCarVIN_message');
+    } else if (step === 5) {
+        message.text = i18n.t(lang, 'enterCarTechpassport_message');
+    } else if (step > 5) {
+        message.text = i18n.t(lang, 'checkCar_message', {
+            brand: data.brand,
+            model: data.model,
+            color: data.color,
+            registration_number: data.registration_number,
+            VIN: data.VIN,
+            techpassport: data.techpassport
+        });
+
+        inline_keyboard[inline_keyboard.length] = [
+            { text: i18n.t(lang, 'confirm_button'), callback_data: 'confirm' }
+        ];
+    }
+
+    if (step > 0) {
+        inline_keyboard[inline_keyboard.length] = [
+            { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
+        ];
+    }
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const personal = (lang, user, key, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'personal_message', {
+            fullname: user.fullname,
+            phone: user.phone
+        }),
+        extra: {}
+    };
+    let inline_keyboard = [];
+
+    if (!key) {
+        inline_keyboard = [
+            [{ text: i18n.t(lang, 'changeFullname_message'), callback_data: 'change-fullname' }],
+            [{ text: i18n.t(lang, 'changePhone_message'), callback_data: 'change-phone' }]
+        ];
+    } else {
+        message.text = i18n.t(lang, `enter_${key}_message`);
+        inline_keyboard = [
+            [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }]
+        ];
+    }
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
         }
     };
 
@@ -373,6 +465,8 @@ module.exports = {
     chooseDate,
     chooseTime,
     order,
+    addCar,
+    personal,
     adminPanel,
     userInfo
 }

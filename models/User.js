@@ -35,8 +35,13 @@ const UserSchema = new Schema({
         type: String,
         default: 'free' // free, subscription, driver
     },
+    fullname: {
+        type: String,
+        default: ''
+    },
     phone: {
-        type: Number
+        type: String,
+        default: ''
     },
     time_zone: {
         type: String,

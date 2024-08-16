@@ -17,19 +17,54 @@ driversOrCarNotFound_message: 'Нет свободных водителей ил
 checkOrder_message: 'Проверьте ваш заказ:'
 newOrder_message: 'Новый заказ:'
 
-order_message: '${service}
+order_message: 'Имя: ${fullname}
 
-${car}
+Телефон: ${phone}
 
-${location}
+Услуга: ${service}
 
-${startDate} - ${endDate}'
+Авто: ${car}
+
+Локация: ${location}
+
+Дата: ${startDate} - ${endDate}'
 
 eventIsAdded_message: 'Событие добавлено!'
+
+enterCarBrand_message: 'Введите марку авто:'
+enterCarModel_message: 'Введите модель авто:'
+enterCarColor_message: 'Введите цвет авто:'
+enterCarRegistrationNumber_message: 'Введите номера авто:'
+enterCarVIN_message: 'Введите VIN авто:'
+enterCarTechpassport_message: 'Введите номер тех. паспорта:'
+
+checkCar_message: '<b>${brand} ${model}</b>
+
+Цвет: ${color}
+
+Регистрационный номер: ${registration_number}
+
+VIN: ${VIN}
+
+Номер тех. папорта: ${techpassport}'
+
+carIsAdded_message: 'Авто добавлено'
 
 adminPanel_message: '/admin USERNAME - сделать админом
 
 /driver USERNAME - сделать водителем'
+
+personal_message: '<b>${fullname}</b>
+
+📞${phone}'
+enter_fullname_message: 'Введите имя:'
+enter_phone_message: 'Введите номер телефона:'
+
+personalUpdated_message: 'Персональные данные обновлены'
+
+remindCustomer1Hour_message: 'Напоминаем, что уже через час к вам приедет водитель!'
+remindCustomer24Hours_message: 'Напоминаем, что через 24 часа к вам приедет водитель!'
+remindDriver1Hour_message: 'Напоминаем, что через час у вас запланирована поездка!'
 
 userInfo_message: '${user}
 
@@ -49,7 +84,12 @@ editCars_button: 'Редактировать авто'
 editPersonal_button: 'Редактировать личные данные'
 calendar_button: 'Календарь'
 
+changeFullname_message: 'Изменить имя'
+changePhone_message: 'Изменить номер телефона'
+
 confirm_button: 'Подтвердить'
+
+addNewCar_button: 'Добавить новое авто'
 
 back_button: 'Назад'
 next_button: 'Вперед'

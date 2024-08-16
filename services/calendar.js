@@ -100,16 +100,16 @@ class Calendar {
 
         const order = await orderDBService.create(data);
         const resource = {
-            summary: data.summary,
+            summary: data.service,
             location: data.location,
             description: order._id,
             start: {
                 dateTime: start,
-                timeZone: data.timeZone
+                timeZone: data.time_zone
             },
             end: {
                 dateTime: end,
-                timeZone: data.timeZone
+                timeZone: data.time_zone
             }
         };
 

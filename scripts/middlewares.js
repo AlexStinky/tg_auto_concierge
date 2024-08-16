@@ -7,7 +7,8 @@ const { calendarService } = require('../services/calendar');
 const {
     userDBService,
     serviceDBService,
-    carDBService
+    carDBService,
+    orderDBService
 } = require('../services/db');
 
 const stnk = process.env.STNK_ID;
@@ -74,7 +75,10 @@ const commands = async (ctx, next) => {
         }
 
         if (text === '/update') {
-            await userDBService.updateAll({}, { time_zone: 'Europe/Lisbon' });
+            await userDBService.dropCollection();
+            await carDBService.dropCollection();
+            await serviceDBService.dropCollection();
+            await orderDBService.dropCollection();
         }
 
         if (response_message) {
@@ -140,6 +144,18 @@ const cb = async (ctx, next) => {
                     await ctx.answerCbQuery(ctx.i18n.t('driversOrCarNotFound_message'), true);
                 }
             }
+
+            if (match[0] === 'edit') {
+                if (match[1] === 'cars') {
+                    await ctx.deleteMessage();
+                    await ctx.scene.enter('car');
+                }
+
+                if (match[1] === 'personal') {
+                    await ctx.deleteMessage();
+                    await ctx.scene.enter('personal');
+                }
+            }
         }
 
         if (response_message) {
@@ -177,8 +193,6 @@ const calendar = async (ctx, date) => {
             ctx.scene.state.order.start_date = date;
 
             const free = await calendarService.getEvents(date, user.time_zone, 24);
-
-            console.log(free)
 
             message = messages.chooseTime(user.lang, user.time_zone, free, message_id);
         }

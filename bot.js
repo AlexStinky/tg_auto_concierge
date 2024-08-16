@@ -14,6 +14,7 @@ const TelegrafI18n = require('telegraf-i18n/lib/i18n');
 const rateLimit = require('telegraf-ratelimit');
 
 const middlewares = require('./scripts/middlewares');
+const timer = require('./scripts/timer');
 
 const { sender } = require('./services/sender');
 
@@ -21,7 +22,9 @@ const profile = require('./scenes/profile');
 const admin = require('./scenes/adminka');
 
 const stage = new Stage([
+    profile.changePersonal(),
     profile.createOrder(),
+    profile.addCar(),
     admin.adminPanel()
 ]);
 
@@ -81,6 +84,8 @@ sender.calendar.setDateListener(middlewares.calendar);
     if (!fs.existsSync('./config.json')) {
         fs.writeFileSync('./config.json', fs.readFileSync('./config_example.json'));
     }
+
+    setTimeout(timer.check, 5000);
 })()
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
