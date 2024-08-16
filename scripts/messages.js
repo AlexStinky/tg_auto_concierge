@@ -13,42 +13,33 @@ const i18n = new TelegrafI18n({
     }
 });
 
+const DEFAULT_DATE_FORMAT = 'YYYY-MM-DD HH:mm';
+
 const getTimeSlots = (timeZone, excludedRanges) => {
-    const now = moment().tz(timeZone);
-    const startOfDay = (excludedRanges.length > 0) ?
-        moment(excludedRanges[0][0]).tz(timeZone) : moment(now).tz(timeZone);
-    const endOfDay = moment(startOfDay).tz(timeZone);
-
-    if (now.date() === startOfDay.date() && now.date() === startOfDay.date()) {
-        startOfDay.hours(now.hours() + 1);
-    } else {
-        startOfDay.hours(0);
-    }
-
-    startOfDay.set({
-        minute: 0,
-        second: 0
-    });
-
-    endOfDay.set({
-        hour: 23,
-        minute: 59,
-        second: 59
-    });
+    let now = moment.tz(timeZone).startOf('hour').add(1, 'hour');
+    
+    const endOfDay = moment.tz(timeZone).endOf('day');
 
     const inline_keyboard = [];
 
-    while (startOfDay <= endOfDay) {
-        const timeSlot = moment(startOfDay).tz(timeZone);
+    while (now <= endOfDay) {
+        const timeSlot = moment(now);
 
+        // Проверяем, попадает ли текущий временной промежуток в какой-либо из исключаемых диапазонов
         const isExcluded = excludedRanges.some(range => {
-            const [start, end] = range.map(date => moment(date).tz(timeZone));
-            start.hours(start.hours() - 1);
-            return timeSlot >= start && timeSlot < end;
+            const [start, end] = range.map(date => {
+                // Попытка определить временную зону из строки, если не указана, использовать UTC
+                const momentDate = moment(date);
+                if (!momentDate.isValid()) {
+                    return moment.tz(date, 'UTC').tz(timeZone);
+                }
+                return momentDate.tz(timeZone);
+            });
+            return timeSlot.isBetween(start, end, null, '[)');
         });
 
         if (!isExcluded) {
-            const time = timeSlot.toISOString().slice(11, 16);
+            const time = timeSlot.format('HH:mm');
             const button = { text: time, callback_data: `time-${time}` };
             const temp = inline_keyboard[inline_keyboard.length - 1];
 
@@ -59,7 +50,7 @@ const getTimeSlots = (timeZone, excludedRanges) => {
             }
         }
 
-        startOfDay.minutes(startOfDay.minutes() + 30);
+        now.add(30, 'minutes'); // Увеличиваем на 30 минут
     }
 
     return inline_keyboard;
@@ -319,8 +310,8 @@ const order = (lang, key, data, message_id = null) => {
         car: data.car.brand + ' ' + data.car.model,
         location: (typeof data.location === 'object') ?
             JSON.stringify(data.location) : data.location,
-        startDate: new Date(data.start_date).toLocaleDateString('ru-RU', dateOptions),
-        endDate: new Date(data.end_date).toLocaleDateString('ru-RU', dateOptions)
+        startDate: data.start_date.format(DEFAULT_DATE_FORMAT),
+        endDate: data.end_date.format(DEFAULT_DATE_FORMAT)
     };
     const message = {
         type: (typeof data.location === 'object') ?
