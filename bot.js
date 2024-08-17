@@ -22,9 +22,10 @@ const profile = require('./scenes/profile');
 const admin = require('./scenes/adminka');
 
 const stage = new Stage([
-    profile.changePersonal(),
-    profile.createOrder(),
+    profile.createEvent(),
     profile.addCar(),
+    profile.editPersonal(),
+    profile.editEvent(),
     admin.adminPanel()
 ]);
 

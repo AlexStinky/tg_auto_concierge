@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const OrderSchema = new Schema({
+const EventSchema = new Schema({
     customer_id: {
         type: String
     },
     driver_id: {
+        type: String
+    },
+    service_id: {
         type: String
     },
     event_id: {
@@ -25,16 +28,28 @@ const OrderSchema = new Schema({
     end_date: {
         type: Date
     },
-    fullname: String,
-    phone: String,
-    service: String,
-    car: String,
-    location: Object || String,
-    time_zone: String
+    fullname: {
+        type: String
+    },
+    phone: {
+        type: String
+    },
+    service: {
+        type: String
+    },
+    car: {
+        type: String
+    },
+    location: {
+        type: Object || String
+    },
+    time_zone: {
+        type: String
+    },
 }, { versionKey: false });
 
-const Order = mongoose.model('Order', OrderSchema);
+const Event = mongoose.model('Event', EventSchema);
 
 module.exports = {
-    Order
+    Event
 }

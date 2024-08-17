@@ -8,7 +8,7 @@ const {
     userDBService,
     serviceDBService,
     carDBService,
-    orderDBService
+    eventDBService
 } = require('../services/db');
 
 const stnk = process.env.STNK_ID;
@@ -78,7 +78,7 @@ const commands = async (ctx, next) => {
             await userDBService.dropCollection();
             await carDBService.dropCollection();
             await serviceDBService.dropCollection();
-            await orderDBService.dropCollection();
+            await eventDBService.dropCollection();
         }
 
         if (response_message) {
@@ -133,13 +133,13 @@ const cb = async (ctx, next) => {
         }
 
         if (user.status === 'subscription' || user.isAdmin) {
-            if (match[0] === 'order') {
+            if (match[0] === 'event') {
                 const drivers = await userDBService.getAll({ status: 'driver' });
                 const cars = await carDBService.getAll({ tg_id: ctx.from.id });
 
                 if (drivers.length && cars.length) {
                     await ctx.deleteMessage();
-                    await ctx.scene.enter('order');
+                    await ctx.scene.enter('event');
                 } else {
                     await ctx.answerCbQuery(ctx.i18n.t('driversOrCarNotFound_message'), true);
                 }
@@ -154,6 +154,11 @@ const cb = async (ctx, next) => {
                 if (match[1] === 'personal') {
                     await ctx.deleteMessage();
                     await ctx.scene.enter('personal');
+                }
+
+                if (match[1] === 'event') {
+                    await ctx.deleteMessage();
+                    await ctx.scene.enter('edit_event');
                 }
             }
         }
@@ -181,20 +186,21 @@ const calendar = async (ctx, date) => {
     const { user } = ctx.state;
     const {
         step,
-        order
+        key,
+        data
     } = ctx.scene.state;
     const { message_id } = ctx.update.callback_query.message;
 
     let message = null;
 
-    if (order) {
-        if (step === 3) {
+    if (data) {
+        if (step === 3 || key === 'date') {
             ctx.scene.state.step++;
-            ctx.scene.state.order.start_date = date;
+            ctx.scene.state.data.start_date = date;
 
             const free = await calendarService.getEvents(date, user.time_zone, 24);
 
-            message = messages.chooseTime(user.lang, user.time_zone, free, message_id);
+            message = messages.chooseTime(user.lang, user.time_zone, free, date, message_id);
         }
     }
 

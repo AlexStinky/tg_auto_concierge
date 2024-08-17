@@ -15,10 +15,21 @@ const i18n = new TelegrafI18n({
 
 const DEFAULT_DATE_FORMAT = 'YYYY-MM-DD HH:mm';
 
-const getTimeSlots = (timeZone, excludedRanges) => {
-    let now = moment.tz(timeZone).startOf('hour').add(1, 'hour');
+const eventText = (data) => ({
+    fullname: data.fullname,
+    phone: data.phone,
+    service: data.service,
+    car: data.car,
+    location: (typeof data.location === 'object') ?
+        JSON.stringify(data.location) : data.location,
+    startDate: moment(data.start_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT),
+    endDate: moment(data.end_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT)
+});
+
+const getTimeSlots = (timeZone, excludedRanges, dayDate) => {
+    let now = moment(dayDate).tz(timeZone).startOf('hour').add(1, 'hour');
     
-    const endOfDay = moment.tz(timeZone).endOf('day');
+    const endOfDay = moment(dayDate).tz(timeZone).endOf('day');
 
     const inline_keyboard = [];
 
@@ -89,11 +100,11 @@ const start = (lang, user, message_id = null) => {
 
     if (user.status === 'subscription') {
         inline_keyboard = [
-            [{ text: i18n.t(lang, 'order_button'), callback_data: 'order' }],
+            [{ text: i18n.t(lang, 'createOrder_button'), callback_data: 'event' }],
             [{ text: i18n.t(lang, 'renewSubscription_button'), callback_data: 'subscription' }],
             [{ text: i18n.t(lang, 'editCars_button'), callback_data: 'edit-cars' }],
             [{ text: i18n.t(lang, 'editPersonal_button'), callback_data: 'edit-personal' }],
-            [{ text: i18n.t(lang, 'calendar_button'), callback_data: 'calendar' }]
+            [{ text: i18n.t(lang, 'editEvent_button'), callback_data: 'edit-event' }]
         ];
     } else {
         inline_keyboard = [
@@ -256,7 +267,7 @@ const chooseDate = (lang, calendar, message_id = null) => {
     return message;
 };
 
-const chooseTime = (lang, timeZone, free, message_id = null) => {
+const chooseTime = (lang, timeZone, busy, date, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -265,8 +276,8 @@ const chooseTime = (lang, timeZone, free, message_id = null) => {
     };
     let isBusy = false, inline_keyboard = [], temp = [];
 
-    for (let i = 0; i < free.length; i++) {
-        const el = free[i];
+    for (let i = 0; i < busy.length; i++) {
+        const el = busy[i];
 
         if (el.start.date || el.end.date) {
             isBusy = true;
@@ -282,7 +293,7 @@ const chooseTime = (lang, timeZone, free, message_id = null) => {
     if (isBusy) {
         message.text = i18n.t(lang, 'dayIsAlreadyBusy_message');
     } else {
-        inline_keyboard = getTimeSlots(timeZone, temp);
+        inline_keyboard = getTimeSlots(timeZone, temp, date);
     }
 
     inline_keyboard[inline_keyboard.length] = [
@@ -298,24 +309,15 @@ const chooseTime = (lang, timeZone, free, message_id = null) => {
     return message;
 };
 
-const order = (lang, key, data, message_id = null) => {
-    const temp = {
-        fullname: data.fullname,
-        phone: data.phone,
-        service: data.service,
-        car: data.car,
-        location: (typeof data.location === 'object') ?
-            JSON.stringify(data.location) : data.location,
-        startDate: moment(data.start_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT),
-        endDate: moment(data.end_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT)
-    };
+const event = (lang, key, data, message_id = null) => {
+    const temp = eventText(data);
     const message = {
         type: (typeof data.location === 'object') ?
             'location' : (message_id) ?
             'edit_text' : 'text',
         message_id,
         location: data.location,
-        text: i18n.t(lang, key) + '\n' + i18n.t(lang, 'order_message', temp),
+        text: i18n.t(lang, key) + '\n' + i18n.t(lang, 'event_message', temp),
         extra: {
             reply_markup: {
                 inline_keyboard: [
@@ -426,6 +428,65 @@ const personal = (lang, user, key, message_id = null) => {
     return message;
 };
 
+const events = (lang, data, page, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'chooseEvent_message'),
+        extra: {}
+    };
+    const key = 'evnt';
+
+    let inline_keyboard = data.reduce((acc, el) => {
+        const start = moment(el.start_date).tz(el.time_zone).format(DEFAULT_DATE_FORMAT);
+        acc[acc.length] = [{
+            text: el.service + ' - ' + start,
+            callback_data: `${key}-${el._id}`
+        }];
+
+        return acc;
+    }, []);
+
+    inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const editEvent = (lang, data, message_id = null) => {
+    const temp = eventText(data);
+    const message = {
+        type: (typeof data.location === 'object') ?
+            'location' : (message_id) ?
+            'edit_text' : 'text',
+        message_id,
+        location: data.location,
+        text: i18n.t(lang, 'event_message', temp),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    //[{ text: i18n.t(lang, 'changeCar_button'), callback_data: 'change-car' }],
+                    [{ text: i18n.t(lang, 'changeLocation_button'), callback_data: 'change-location' }],
+                    [{ text: i18n.t(lang, 'changeDate_button'), callback_data: 'change-date' }],
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
+
+    return message;
+};
+
 const adminPanel = (lang, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
@@ -464,9 +525,11 @@ module.exports = {
     location,
     chooseDate,
     chooseTime,
-    order,
+    event,
     addCar,
     personal,
+    events,
+    editEvent,
     adminPanel,
     userInfo
 }

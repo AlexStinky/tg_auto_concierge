@@ -16,8 +16,9 @@ driversOrCarNotFound_message: 'Нет свободных водителей ил
 
 checkOrder_message: 'Проверьте ваш заказ:'
 newOrder_message: 'Новый заказ:'
+updateOrder_message: 'Заказ был обновлен:'
 
-order_message: 'Имя: ${fullname}
+event_message: 'Имя: ${fullname}
 
 Телефон: ${phone}
 
@@ -62,6 +63,10 @@ enter_phone_message: 'Введите номер телефона:'
 
 personalUpdated_message: 'Персональные данные обновлены'
 
+chooseEvent_message: 'Выберите событие:'
+
+dateIsUpdate_message: 'Дата обновлена'
+
 remindCustomer1Hour_message: 'Напоминаем, что уже через час к вам приедет водитель!'
 remindCustomer24Hours_message: 'Напоминаем, что через 24 часа к вам приедет водитель!'
 remindDriver1Hour_message: 'Напоминаем, что через час у вас запланирована поездка!'
@@ -78,19 +83,22 @@ renewSubscription_message: 'Продлить подписку'
 
 pay_button: 'Купить'
 
-order_button: 'Заказать услугу'
+createOrder_button: 'Заказать услугу'
 renewSubscription_button: 'Продлить подписку'
 editCars_button: 'Редактировать авто'
 editPersonal_button: 'Редактировать личные данные'
-calendar_button: 'Календарь'
+editEvent_button: 'Редактировать событие'
+
+addNewCar_button: 'Добавить новое авто'
 
 changeFullname_message: 'Изменить имя'
 changePhone_message: 'Изменить номер телефона'
 
+changeCar_button: 'Изменить авто'
+changeLocation_button: 'Изменить локацию'
+changeDate_button: 'Изменить дату'
+
 confirm_button: 'Подтвердить'
-
-addNewCar_button: 'Добавить новое авто'
-
 back_button: 'Назад'
 next_button: 'Вперед'
 cancel_button: 'Отмена'

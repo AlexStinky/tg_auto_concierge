@@ -6,7 +6,7 @@ const messages = require('../scripts/messages');
 
 const {
     userDBService,
-    orderDBService
+    eventDBService
 } = require('./db');
 const { sender } = require('./sender');
 
@@ -33,6 +33,20 @@ class Calendar {
             start_date,
             end_date
         };
+    }
+
+    async notification(data, key) {
+        const driver = await userDBService.get({ tg_id: data.driver_id });
+
+        if (driver) {
+            const message = messages.event(driver.lang, key, data);
+            message.extra = {};
+
+            sender.enqueue({
+                chat_id: driver.tg_id,
+                message
+            });
+        }
     }
 
     async getCalendars() {
@@ -70,39 +84,15 @@ class Calendar {
         return [];
     }
 
-    async getBusy(startDate, endDate, id = process.env.GOOGLE_EMAIL) {
-        try {
-            const res = await this.calendar.freebusy.query({
-                requestBody: {
-                    timeMin: startDate.toISOString(),
-                    timeMax: endDate.toISOString(),
-                    items: [{ id }]
-                }
-            });
-
-            console.log(res.data)
-
-            const busyTimes = res.data.calendars[id].busy;
-
-            if (busyTimes.length) {
-                return busyTimes;
-            }
-        } catch (err) {
-            console.error('[get] The API returned an error:', err.errors ? err.errors : err);
-        }
-
-        return null;
-    }
-
     async addEvent(data, calendarId = process.env.GOOGLE_EMAIL) {
         const start = data.start_date.toISOString();
         const end = data.end_date.toISOString();
 
-        const order = await orderDBService.create(data);
+        const event = await eventDBService.create(data);
         const resource = {
             summary: data.service,
             location: data.location,
-            description: order._id,
+            description: event._id,
             start: {
                 dateTime: start,
                 timeZone: data.time_zone
@@ -120,24 +110,52 @@ class Calendar {
                 calendarId,
                 resource
             });
-            const driver = await userDBService.get({ tg_id: data.driver_id });
 
-            if (driver) {
-                const message = messages.order(driver.lang, 'newOrder_message', data);
-                message.extra = {};
+            await eventDBService.update({ _id: event._id }, { event_id: eventRes.data.id });
 
-                sender.enqueue({
-                    chat_id: driver.tg_id,
-                    message
-                });
+            await this.notification(data, 'newOrder_message');
 
-                return eventRes.data.htmlLink;
-            }
+            return eventRes.data.htmlLink;
         } catch (err) {
             console.error('[add] The API returned an error:', err.errors ? err.errors : err);
         }
 
         return null;
+    }
+
+    async updateEvent(eventId, data, calendarId = process.env.GOOGLE_EMAIL) {
+        const start = data.start_date.toISOString();
+        const end = data.end_date.toISOString();
+
+        const requestBody = {
+            summary: data.service,
+            location: data.location,
+            description: data._id,
+            start: {
+                dateTime: start,
+                timeZone: data.time_zone
+            },
+            end: {
+                dateTime: end,
+                timeZone: data.time_zone
+            }
+        };
+
+        try {
+            const response = await this.calendar.events.update({
+                calendarId,
+                eventId,
+                requestBody
+            });
+
+            await eventDBService.update({ _id: data._id }, data);
+
+            await this.notification(data, 'updateOrder_message');
+      
+            console.log('Event updated successfully:', response.data);
+        } catch (error) {
+            console.error('Error updating event:', error);
+        }
     }
 
     async deleteEvent(eventId, calendarId = process.env.GOOGLE_EMAIL) {
@@ -149,7 +167,7 @@ class Calendar {
         } catch (err) {
             console.error('[delete] The API returned an error::', err.errors ? err.errors : err);
         }
-      }
+    }
 }
 
 const calendarService = new Calendar();

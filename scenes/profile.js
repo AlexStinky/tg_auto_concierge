@@ -7,7 +7,7 @@ const {
     userDBService,
     carDBService,
     serviceDBService,
-    orderDBService
+    eventDBService
 } = require('../services/db');
 const { calendarService } = require('../services/calendar');
 const { sender } = require('../services/sender');
@@ -19,26 +19,26 @@ const getServices = async () => {
     startMonth.setHours(0);
     startMonth.setMinutes(0);
 
-    const services = await serviceDBService.getAll();
+    const services = await serviceDBService.getAll({});
 
     const temp = [];
 
     for (let i = 0; i < services.length; i++) {
         const service = services[i];
-        const orders = await orderDBService.getCount({
+        const events = await eventDBService.getCount({
             service_id: service._id,
             creation_date: {
                 $gt: startMonth,
                 $lt: now
             }
         });
-        const available = service.limits - orders;
+        const available = service.limits - events;
 
         if (available > 0) {
             temp[temp.length] = {
                 id: service._id,
                 title: service.title,
-                available: service.limits - orders,
+                available: service.limits - events,
                 all: service.limits
             };
         }
@@ -47,70 +47,69 @@ const getServices = async () => {
     return temp;
 };
 
-function changePersonal() {
-    const personal = new Scene('personal');
+const eventTime = async (ctx, isEdit = false) => {
+    const { user } = ctx.state;
+    const { data } = ctx.scene.state;
+    const { message_id } = ctx.update.callback_query.message;
 
-    personal.use(middlewares.start);
-    personal.use(middlewares.commands);
-    personal.use(middlewares.cb);
+    const hours = Number(ctx.match[1]);
+    const minutes = Number(ctx.match[2]);
 
-    personal.enter(async (ctx) => {
-        const user = await userDBService.get({ tg_id: ctx.from.id });
+    const {
+        start_date,
+        end_date
+    } = calendarService.getDate(data.start_date, user.time_zone);
 
-        const message = messages.personal(user.lang, user, null);
-
-        sender.enqueue({
-            chat_id: ctx.from.id,
-            message
-        });
+    start_date.set({
+        hour: hours,
+        minute: minutes
+    });
+    end_date.set({
+        hour: hours + 1,
+        minutes: minutes
     });
 
-    personal.action(/change-(fullname|phone)/, async (ctx) => {
-        const { user } = ctx.state;
-        const { message_id } = ctx.update.callback_query.message;
+    data.start_date = start_date;
+    data.end_date = end_date;
 
-        ctx.scene.state.key = ctx.match[1];
+    let message = null;
 
-        const message = messages.personal(user.lang, user, ctx.scene.state.key, message_id);
+    if (isEdit) {
+        ctx.scene.state.key = null;
 
-        sender.enqueue({
-            chat_id: ctx.from.id,
-            message
-        });
+        message = messages.editEvent(user.lang, data, message_id);
+
+        await calendarService.updateEvent(data.event_id, data);
+
+        await ctx.answerCbQuery(ctx.i18n.t('dateIsUpdated_message'), true);
+    } else {
+        ctx.scene.state.step++;
+
+        message = messages.event(user.lang, 'checkOrder_message', data, message_id);
+
+        if (message.type === 'location') {
+            sender.deleteMessage(ctx.from.id, message_id);
+        }
+    }
+
+    sender.enqueue({
+        chat_id: ctx.from.id,
+        message
     });
+};
 
-    personal.action('back', async (ctx) => {
-        await ctx.deleteMessage();
-        await ctx.scene.reenter();
-    });
+function createEvent() {
+    const event = new Scene('event');
 
-    personal.on('text', async (ctx) => {
-        const { key } = ctx.scene.state;
-        const { message_id } = ctx.update.message;
-        const { text } = ctx.message;
+    event.use(middlewares.start);
+    event.use(middlewares.commands);
+    event.use(middlewares.cb);
 
-        await userDBService.update({ tg_id: ctx.from.id }, { [key]: text });
-
-        sender.deleteMessage(ctx.from.id, message_id - 1);
-
-        await ctx.scene.reenter();
-    });
-
-    return personal;
-}
-
-function createOrder() {
-    const order = new Scene('order');
-
-    order.use(middlewares.start);
-    order.use(middlewares.commands);
-    order.use(middlewares.cb);
-
-    order.enter(async (ctx) => {
+    event.enter(async (ctx) => {
         const { user } = ctx.state;
 
         ctx.scene.state.step = 0;
-        ctx.scene.state.order = {
+        ctx.scene.state.data = {
             customer_id: user.tg_id,
             fullname: user.fullname,
             phone: user.phone,
@@ -127,10 +126,10 @@ function createOrder() {
         });
     });
 
-    order.action(/(srv|car)-([a-z0-9]+)/, async (ctx) => {
+    event.action(/(srv|car)-([a-z0-9]+)/, async (ctx) => {
         const { user } = ctx.state;
         const {
-            order,
+            data,
             cars,
         } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
@@ -143,7 +142,8 @@ function createOrder() {
         if (key === 'srv') {
             const service = await serviceDBService.get({ _id });
 
-            order.service = service.title;
+            data.service_id = _id;
+            data.service = service.title;
 
             message = messages.cars(user.lang, cars, 0, false, message_id);
         } else if (key === 'car') {
@@ -151,8 +151,8 @@ function createOrder() {
             const driver = await userDBService.get({ status: 'driver' });
 
             if (car && driver) {
-                order.car = car.brand + ' ' + car.model;
-                order.driver_id = driver.tg_id;
+                data.car = car.brand + ' ' + car.model;
+                data.driver_id = driver.tg_id;
 
                 message = messages.location(user.lang, message_id);
             }
@@ -168,7 +168,7 @@ function createOrder() {
         }
     });
 
-    order.action(/next-([a-z]+)-([0-9]+)/, async (ctx) => {
+    event.action(/next-([a-z]+)-([0-9]+)/, async (ctx) => {
         const { user } = ctx.state;
         const {
             services,
@@ -195,51 +195,14 @@ function createOrder() {
         }
     });
 
-    order.action(/time-([0-9]+):([0-9]+)/, async (ctx) => {
+    event.action(/time-([0-9]+):([0-9]+)/, async (ctx) => await eventTime(ctx));
+
+    event.action('confirm', async (ctx) => {
         const { user } = ctx.state;
-        const { order } = ctx.scene.state;
+        const { data } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
-        const hours = Number(ctx.match[1]);
-        const minutes = Number(ctx.match[2]);
-
-        const {
-            start_date,
-            end_date
-        } = calendarService.getDate(order.start_date, user.time_zone);
-
-        start_date.set({
-            hour: hours,
-            minute: minutes
-        });
-        end_date.set({
-            hour: hours + 1,
-            minutes: minutes
-        });
-
-        order.start_date = start_date;
-        order.end_date = end_date;
-
-        ctx.scene.state.step++;
-
-        const message = messages.order(user.lang, 'checkOrder_message', order, message_id);
-
-        if (message.type === 'location') {
-            sender.deleteMessage(ctx.from.id, message_id);
-        }
-
-        sender.enqueue({
-            chat_id: ctx.from.id,
-            message
-        });
-    });
-
-    order.action('confirm', async (ctx) => {
-        const { user } = ctx.state;
-        const { order } = ctx.scene.state;
-        const { message_id } = ctx.update.callback_query.message;
-
-        const res = await calendarService.addEvent(order);
+        const res = await calendarService.addEvent(data);
 
         if (res) {
             await ctx.answerCbQuery(ctx.i18n.t('eventIsAdded_message'), true);
@@ -255,7 +218,7 @@ function createOrder() {
         await ctx.scene.leave();
     });
 
-    order.action('back', async (ctx) => {
+    event.action('back', async (ctx) => {
         const { user } = ctx.state;
         const {
             step,
@@ -289,14 +252,14 @@ function createOrder() {
         }
     });
 
-    order.on('location', async (ctx) => {
+    event.on('location', async (ctx) => {
         const { user } = ctx.state;
         const { step } = ctx.scene.state;
         const { location } = ctx.update.message;
 
         if (step === 2) {
             ctx.scene.state.step++;
-            ctx.scene.state.order.location = location;
+            ctx.scene.state.data.location = location;
 
             const message = messages.chooseDate(user.lang, sender.calendar);
 
@@ -307,7 +270,7 @@ function createOrder() {
         }
     });
 
-    order.on('text', async (ctx) => {
+    event.on('text', async (ctx) => {
         const { user } = ctx.state;
         const { step } = ctx.scene.state;
         const { text } = ctx.message;
@@ -316,7 +279,7 @@ function createOrder() {
 
         if (step === 2) {
             ctx.scene.state.step++;
-            ctx.scene.state.order.location = text;
+            ctx.scene.state.data.location = text;
 
             message = messages.chooseDate(user.lang, sender.calendar);
         }
@@ -329,7 +292,7 @@ function createOrder() {
         }
     });
 
-    return order;
+    return event;
 }
 
 function addCar() {
@@ -474,8 +437,227 @@ function addCar() {
     return car;
 }
 
+function editPersonal() {
+    const personal = new Scene('personal');
+
+    personal.use(middlewares.start);
+    personal.use(middlewares.commands);
+    personal.use(middlewares.cb);
+
+    personal.enter(async (ctx) => {
+        const user = await userDBService.get({ tg_id: ctx.from.id });
+
+        const message = messages.personal(user.lang, user, null);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    personal.action(/change-(fullname|phone)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        ctx.scene.state.key = ctx.match[1];
+
+        const message = messages.personal(user.lang, user, ctx.scene.state.key, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    personal.action('back', async (ctx) => {
+        await ctx.deleteMessage();
+        await ctx.scene.reenter();
+    });
+
+    personal.on('text', async (ctx) => {
+        const { key } = ctx.scene.state;
+        const { message_id } = ctx.update.message;
+        const { text } = ctx.message;
+
+        await userDBService.update({ tg_id: ctx.from.id }, { [key]: text });
+
+        sender.deleteMessage(ctx.from.id, message_id - 1);
+
+        await ctx.scene.reenter();
+    });
+
+    return personal;
+}
+
+function editEvent() {
+    const edit_event = new Scene('edit_event');
+
+    edit_event.use(middlewares.start);
+    edit_event.use(middlewares.commands);
+    edit_event.use(middlewares.cb);
+
+    edit_event.enter(async (ctx) => {
+        const { user } = ctx.state;
+
+        ctx.scene.state.key = null;
+        ctx.scene.state.order = null;
+        ctx.scene.state.events = await eventDBService.getAll({
+            customer_id: ctx.from.id,
+            status: 'not completed',
+            start_date: {
+                $gt: new Date()
+            }
+        });
+
+        const message = messages.events(user.lang, ctx.scene.state.events, 0);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    edit_event.action(/evnt-([0-9a-z]+)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const _id = ctx.match[1];
+
+        ctx.scene.state.data = await eventDBService.get({ _id });
+
+        console.log(ctx.scene.state.data)
+
+        if (ctx.scene.state.data) {
+            const message = messages.editEvent(user.lang, ctx.scene.state.data, message_id);
+
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        } else {
+            await ctx.scene.leave();
+        }
+    });
+
+    edit_event.action(/change-(car|location|date)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const key = ctx.match[1];
+
+        let message = null;
+
+        ctx.scene.state.key = key;
+
+        if (key === 'car') {
+
+        } else if (key === 'location') {
+            message = messages.location(user.lang, message_id);
+        } else if (key === 'date') {
+            message = messages.chooseDate(user.lang, sender.calendar, message_id);
+        }
+
+        if (message) {
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        }
+    });
+
+    edit_event.action(/time-([0-9]+)/, async (ctx) => await eventTime(ctx, true));
+
+    edit_event.action(/next-([a-z]+)-([0-9]+)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { events } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        const page = Number(ctx.match[2]);
+
+        const message = messages.events(user.lang, events, page, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    edit_event.action('back', async (ctx) => {
+        const { user } = ctx.state;
+        const {
+            key,
+            data
+        } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        if (key) {
+            const message = messages.editEvent(user.lang, data, message_id);
+
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        } else {
+            await ctx.deleteMessage();
+            await ctx.scene.reenter();
+        }
+    });
+
+    edit_event.on('location', async (ctx) => {
+        const { user } = ctx.state;
+        const { data } = ctx.scene.state;
+        const { location } = ctx.update.message;
+
+        ctx.scene.state.key = null;
+
+        data.location = location;
+
+        console.log(data)
+
+        await calendarService.updateEvent(data.event_id, data);
+
+        const message = messages.editEvent(user.lang, data);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    edit_event.on('text', async (ctx) => {
+        const { user } = ctx.state;
+        const {
+            key,
+            data
+        } = ctx.scene.state;
+        const { text } = ctx.message;
+
+        let message = null;
+
+        if (key === 'location') {
+            ctx.scene.state.key = null;
+
+            data.location = text;
+
+            message = messages.editEvent(user.lang, data);
+
+            await calendarService.updateEvent(data.event_id, data);
+        }
+
+        if (message) {
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        }
+    });
+
+    return edit_event;
+}
+
 module.exports = {
-    changePersonal,
-    createOrder,
-    addCar
+    createEvent,
+    addCar,
+    editPersonal,
+    editEvent
 }

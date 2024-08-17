@@ -79,25 +79,19 @@ function adminPanel() {
     });
 
     adminka.command('addCar', async (ctx) => {
-        /*const start_date = new Date();
-        const end_date = new Date();
-        start_date.setDate(start_date.getDate() + 1);
-        end_date.setDate(end_date.getDate() + 1);
-        const event = {
-            summary: 'Заказ водителя',
-            location: '123',
-            description: 'description',
-            start_date,
-            end_date
-        };
-        const res = await calendarService.addEvent(event);
-
-        console.log(res)*/
-
         await carDBService.create({
             tg_id: ctx.from.id,
             brand: 'Mercedes',
             model: 'W136'
+        });
+
+        await ctx.replyWithHTML('Done!');
+    });
+
+    adminka.command('addService', async (ctx) => {
+        await serviceDBService.create({
+            tg_id: ctx.from.id,
+            title: 'Поехать в ТЦ'
         });
 
         await ctx.replyWithHTML('Done!');

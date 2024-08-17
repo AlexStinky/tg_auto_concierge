@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const messages = require('./messages');
 
 const { calendarService } = require('../services/calendar');
-const { orderDBService } = require('../services/db');
+const { eventDBService } = require('../services/db');
 const { sender } = require('../services/sender');
 
 const CHECK_DELAY = 3600000;
@@ -15,25 +15,25 @@ const remind = async (events, type) => {
 
         let msgs = [];
 
-        const order = await orderDBService.get({ _id });
+        const event_db = await eventDBService.get({ _id });
 
-        if (order) {
+        if (event_db) {
             if (type === '1hour') {
                 msgs = [
                     {
-                        chat_id: order.customer_id,
-                        message: messages.order('ru', 'remindCustomer1Hour_message', order)
+                        chat_id: event_db.customer_id,
+                        message: messages.event('ru', 'remindCustomer1Hour_message', event_db)
                     },
                     {
-                        chat_id: order.driver_id,
-                        message: messages.order('ru', 'remindDriver1Hour_message', order)
+                        chat_id: event_db.driver_id,
+                        message: messages.event('ru', 'remindDriver1Hour_message', event_db)
                     }
                 ];
             } else {
                 msgs = [
                     {
-                        chat_id: order.customer_id,
-                        message: messages.order('ru', 'remindCustomer24Hours_message', order)
+                        chat_id: event_db.customer_id,
+                        message: messages.event('ru', 'remindCustomer24Hours_message', event_db)
                     }
                 ];
             }
