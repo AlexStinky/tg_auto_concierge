@@ -19,14 +19,17 @@ const timer = require('./scripts/timer');
 const { sender } = require('./services/sender');
 
 const profile = require('./scenes/profile');
-const admin = require('./scenes/adminka');
+const adminka = require('./scenes/adminka');
 
 const stage = new Stage([
-    profile.createEvent(),
+    profile.addEvent(),
     profile.addCar(),
     profile.editPersonal(),
     profile.editEvent(),
-    admin.adminPanel()
+    adminka.adminPanel(),
+    adminka.addService(),
+    adminka.editTariff(),
+    adminka.editDriver()
 ]);
 
 const bot = new Telegraf(process.env.BOT_TOKEN, { handlerTimeout: 100 });

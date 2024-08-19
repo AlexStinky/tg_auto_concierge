@@ -67,6 +67,8 @@ const commands = async (ctx, next) => {
         let response_message = null;
 
         if (text.includes('/start')) {
+            await ctx.scene.leave();
+
             response_message = messages.start(user.lang, user);
         }
 
@@ -109,6 +111,8 @@ const cb = async (ctx, next) => {
             response_message = null;
 
         if (match[0] === 'cancel') {
+            await ctx.scene.leave();
+
             response_message = messages.start(user.lang, user, message_id);
         }
 

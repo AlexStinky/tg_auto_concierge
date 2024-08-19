@@ -27,7 +27,9 @@ const eventText = (data) => ({
 });
 
 const getTimeSlots = (timeZone, excludedRanges, dayDate) => {
+    console.log(dayDate)
     let now = moment(dayDate).tz(timeZone).startOf('hour').add(1, 'hour');
+    console.log(now)
     
     const endOfDay = moment(dayDate).tz(timeZone).endOf('day');
 
@@ -86,6 +88,24 @@ const paginations = (lang, inline_keyboard, data, page, key, size = 5) => {
     }
 
     return inline_keyboard;
+};
+
+const simple = (lang, key, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, key),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
+
+    return message;
 };
 
 const start = (lang, user, message_id = null) => {
@@ -159,7 +179,7 @@ const subscription = (lang, user, message_id = null) => {
     return message;
 };
 
-const services = (lang, data, page, message_id = null) => {
+const services = (lang, data, page, isAdmin, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -168,17 +188,26 @@ const services = (lang, data, page, message_id = null) => {
     };
     const key = 'srv';
 
-    let inline_keyboard = data.reduce((acc, el) => {
+    let inline_keyboard = (isAdmin) ?
+        [[{ text: i18n.t(lang, 'addService_button'), callback_data: `add-${key}` }]] : [];
+    inline_keyboard = data.reduce((acc, el) => {
+        const text = (isAdmin) ?
+            el.title : el.title + ' ' + `${el.available}/${el.all}`;
+        const callback_data = (isAdmin) ?
+            `edit-${key}-${el._id}` : `${key}-${el.id}`;
         acc[acc.length] = [{
-            text: el.title + ' ' + `${el.available}/${el.all}`,
-            callback_data: `${key}-${el.id}`
+            text,
+            callback_data
         }];
 
         return acc;
-    }, []);
+    }, inline_keyboard);
 
     inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
 
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
+    ];
     inline_keyboard[inline_keyboard.length] = [
         { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
     ];
@@ -216,7 +245,10 @@ const cars = (lang, data, page, isAdd = false, message_id = null) => {
     inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
 
     inline_keyboard[inline_keyboard.length] = [
-        { text: i18n.t(lang, 'cancel_button'), callback_data: 'back' }
+        { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
+    ];
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
     ];
 
     message.extra = {
@@ -309,6 +341,40 @@ const chooseTime = (lang, timeZone, busy, date, message_id = null) => {
     return message;
 };
 
+const events = (lang, data, page, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'chooseEvent_message'),
+        extra: {}
+    };
+    const key = 'evnt';
+
+    let inline_keyboard = data.reduce((acc, el) => {
+        const start = moment(el.start_date).tz(el.time_zone).format(DEFAULT_DATE_FORMAT);
+        acc[acc.length] = [{
+            text: el.service + ' - ' + start,
+            callback_data: `${key}-${el._id}`
+        }];
+
+        return acc;
+    }, []);
+
+    inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
 const event = (lang, key, data, message_id = null) => {
     const temp = eventText(data);
     const message = {
@@ -332,6 +398,97 @@ const event = (lang, key, data, message_id = null) => {
     if (key && key.includes('remind')) {
         message.extra = {};
     }
+
+    return message;
+};
+
+const personal = (lang, user, key, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'personal_message', {
+            fullname: user.fullname,
+            phone: user.phone
+        }),
+        extra: {}
+    };
+    let inline_keyboard = [];
+
+    if (!key) {
+        inline_keyboard = [
+            [{ text: i18n.t(lang, 'editFullname_button'), callback_data: 'edit-fullname' }],
+            [{ text: i18n.t(lang, 'editPhone_button'), callback_data: 'edit-phone' }]
+        ];
+    } else {
+        message.text = i18n.t(lang, `enter_${key}_message`);
+        inline_keyboard = [
+            [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }]
+        ];
+    }
+
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+    ];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const tariffs = (lang, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'chooseTariff_message'),
+        extra: {}
+    };
+    const inline_keyboard = data.reduce((acc, el) => {
+        acc[acc.length] = [{ text: el.title, callback_data: `tariff-${el.id}` }];
+
+        return acc;
+    }, []);
+
+    inline_keyboard[inline_keyboard.length] = [{
+        text: i18n.t(lang, 'back_button'), callback_data: 'back'
+    }];
+    inline_keyboard[inline_keyboard.length] = [{
+        text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel'
+    }];
+
+    message.extra = {
+        reply_markup: {
+            inline_keyboard
+        }
+    };
+
+    return message;
+};
+
+const editEvent = (lang, data, message_id = null) => {
+    const temp = eventText(data);
+    const message = {
+        type: (typeof data.location === 'object') ?
+            'location' : (message_id) ?
+            'edit_text' : 'text',
+        message_id,
+        location: data.location,
+        text: i18n.t(lang, 'event_message', temp),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    //[{ text: i18n.t(lang, 'editCar_button'), callback_data: 'edit-car' }],
+                    [{ text: i18n.t(lang, 'editLocation_button'), callback_data: 'edit-location' }],
+                    [{ text: i18n.t(lang, 'editDate_button'), callback_data: 'edit-date' }],
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
 
     return message;
 };
@@ -372,12 +529,9 @@ const addCar = (lang, step, data, message_id = null) => {
         ];
     }
 
-    if (step > 0) {
-        inline_keyboard[inline_keyboard.length] = [
-            { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
-        ];
-    }
-
+    inline_keyboard[inline_keyboard.length] = [
+        { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
+    ];
     inline_keyboard[inline_keyboard.length] = [
         { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
     ];
@@ -391,64 +545,60 @@ const addCar = (lang, step, data, message_id = null) => {
     return message;
 };
 
-const personal = (lang, user, key, message_id = null) => {
+const editCar = (lang, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
-        text: i18n.t(lang, 'personal_message', {
-            fullname: user.fullname,
-            phone: user.phone
-        }),
+        text: i18n.t(lang, 'editCar_message'),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'deleteCar_button'), callback_data: 'delete' }],
+                    [{ text: i18n.t(lang, 'editCarBrand_button'), callback_data: 'edit-0' }],
+                    [{ text: i18n.t(lang, 'editCarModel_button'), callback_data: 'edit-1' }],
+                    [{ text: i18n.t(lang, 'editCarColor_button'), callback_data: 'edit-2' }],
+                    [{ text: i18n.t(lang, 'editCarRegistrationNumber_button'), callback_data: 'edit-3' }],
+                    [{ text: i18n.t(lang, 'editCarVIN_button'), callback_data: 'edit-4' }],
+                    [{ text: i18n.t(lang, 'editCarTechpassport_button'), callback_data: 'edit-5' }],
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
+
+    return message;
+};
+
+const addService = (lang, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: '',
         extra: {}
     };
     let inline_keyboard = [];
 
-    if (!key) {
-        inline_keyboard = [
-            [{ text: i18n.t(lang, 'changeFullname_message'), callback_data: 'change-fullname' }],
-            [{ text: i18n.t(lang, 'changePhone_message'), callback_data: 'change-phone' }]
-        ];
+    if (data.step === 0) {
+        message.text = i18n.t(lang, 'enterServiceTitle_message');
+    } else if (data.step === 1) {
+        message.text = i18n.t(lang, 'enterServiceLimitsOnMonth_message');
     } else {
-        message.text = i18n.t(lang, `enter_${key}_message`);
+        message.text = i18n.t(lang, 'checkService_message') +
+            '\n' +
+            i18n.t(lang, 'service_message', {
+                title: data.title,
+                limits: data.limits
+            });
+
         inline_keyboard = [
-            [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }]
+            [{ text: i18n.t(lang, 'confirm_button'), callback_data: 'confirm' }]
         ];
     }
 
     inline_keyboard[inline_keyboard.length] = [
-        { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
+        { text: i18n.t(lang, 'back_button'), callback_data: 'back' }
     ];
-
-    message.extra = {
-        reply_markup: {
-            inline_keyboard
-        }
-    };
-
-    return message;
-};
-
-const events = (lang, data, page, message_id = null) => {
-    const message = {
-        type: (message_id) ? 'edit_text' : 'text',
-        message_id,
-        text: i18n.t(lang, 'chooseEvent_message'),
-        extra: {}
-    };
-    const key = 'evnt';
-
-    let inline_keyboard = data.reduce((acc, el) => {
-        const start = moment(el.start_date).tz(el.time_zone).format(DEFAULT_DATE_FORMAT);
-        acc[acc.length] = [{
-            text: el.service + ' - ' + start,
-            callback_data: `${key}-${el._id}`
-        }];
-
-        return acc;
-    }, []);
-
-    inline_keyboard = paginations(lang, inline_keyboard, data, page, key);
-
     inline_keyboard[inline_keyboard.length] = [
         { text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }
     ];
@@ -462,23 +612,70 @@ const events = (lang, data, page, message_id = null) => {
     return message;
 };
 
-const editEvent = (lang, data, message_id = null) => {
-    const temp = eventText(data);
+const editService = (lang, data, message_id = null) => {
     const message = {
-        type: (typeof data.location === 'object') ?
-            'location' : (message_id) ?
-            'edit_text' : 'text',
+        type: (message_id) ? 'edit_text' : 'text',
         message_id,
-        location: data.location,
-        text: i18n.t(lang, 'event_message', temp),
+        text: i18n.t(lang, 'editService_message') +
+            '\n' +
+            i18n.t(lang, 'service_message', {
+                title: data.title,
+                limits: data.limits
+            }),
         extra: {
             reply_markup: {
                 inline_keyboard: [
-                    //[{ text: i18n.t(lang, 'changeCar_button'), callback_data: 'change-car' }],
-                    [{ text: i18n.t(lang, 'changeLocation_button'), callback_data: 'change-location' }],
-                    [{ text: i18n.t(lang, 'changeDate_button'), callback_data: 'change-date' }],
+                    [{ text: i18n.t(lang, 'deleteService_button'), callback_data: 'srv-delete' }],
+                    [{ text: i18n.t(lang, 'editServiceTitle_button'), callback_data: 'srv-title' }],
+                    [{ text: i18n.t(lang, 'editServiceLimits_button'), callback_data: 'srv-limits' }],
                     [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }],
                     [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
+    };
+
+    return message;
+};
+
+const editTariff = (lang, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'editTariff_message', data),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'editPrice_button'), callback_data: 'edit-price' }],
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }]
+                ]
+            }
+        }
+    };
+
+    return message;
+};
+
+const editDriver = (lang, data, message_id = null) => {
+    const message = {
+        type: (message_id) ? 'edit_text' : 'text',
+        message_id,
+        text: i18n.t(lang, 'editDriver_message', {
+            user: i18n.t(lang, 'user_url', {
+                id: data.tg_id,
+                username: data.tg_username
+            }),
+            phone: data.phone,
+            before_time: data.before_time,
+            duration_time: data.duration_time
+        }),
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'editPhone_button'), callback_data: 'edit-phone' }],
+                    [{ text: i18n.t(lang, 'editBeforeTime_button'), callback_data: 'edit-before_time' }],
+                    [{ text: i18n.t(lang, 'editDurationTime_button'), callback_data: 'edit-duration_time' }],
+                    [{ text: i18n.t(lang, 'back_button'), callback_data: 'back' }]
                 ]
             }
         }
@@ -492,7 +689,17 @@ const adminPanel = (lang, message_id = null) => {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
         text: i18n.t(lang, 'adminPanel_message'),
-        extra: {}
+        extra: {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: i18n.t(lang, 'services_button'), callback_data: 'services' }],
+                    [{ text: i18n.t(lang, 'cars_button'), callback_data: 'cars' }],
+                    [{ text: i18n.t(lang, 'tariffs_button'), callback_data: 'tariffs' }],
+                    [{ text: i18n.t(lang, 'drivers_button'), callback_data: 'drivers' }],
+                    [{ text: i18n.t(lang, 'cancel_button'), callback_data: 'cancel' }]
+                ]
+            }
+        }
     };
 
     return message;
@@ -517,6 +724,7 @@ const userInfo = (lang, user, message_id = null) => {
 };
 
 module.exports = {
+    simple,
     start,
     about,
     subscription,
@@ -525,11 +733,17 @@ module.exports = {
     location,
     chooseDate,
     chooseTime,
-    event,
-    addCar,
-    personal,
     events,
+    event,
+    personal,
+    tariffs,
     editEvent,
+    addCar,
+    editCar,
+    addService,
+    editService,
+    editTariff,
+    editDriver,
     adminPanel,
     userInfo
 }

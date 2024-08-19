@@ -65,9 +65,12 @@ const eventTime = async (ctx, isEdit = false) => {
         minute: minutes
     });
     end_date.set({
-        hour: hours + 1,
+        hour: hours,
         minutes: minutes
     });
+    end_date.add(data.duration_time, 'minutes');
+
+    console.log(end_date)
 
     data.start_date = start_date;
     data.end_date = end_date;
@@ -98,7 +101,7 @@ const eventTime = async (ctx, isEdit = false) => {
     });
 };
 
-function createEvent() {
+function addEvent() {
     const event = new Scene('event');
 
     event.use(middlewares.start);
@@ -118,7 +121,7 @@ function createEvent() {
         ctx.scene.state.services = await getServices();
         ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
 
-        const message = messages.services(user.lang, ctx.scene.state.services, 0);
+        const message = messages.services(user.lang, ctx.scene.state.services, 0, false);
 
         sender.enqueue({
             chat_id: ctx.from.id,
@@ -153,6 +156,7 @@ function createEvent() {
             if (car && driver) {
                 data.car = car.brand + ' ' + car.model;
                 data.driver_id = driver.tg_id;
+                data.duration_time = driver.duration_time;
 
                 message = messages.location(user.lang, message_id);
             }
@@ -182,7 +186,7 @@ function createEvent() {
         let message = null;
 
         if (key === 'srv') {
-            message = messages.services(user.lang, services, page, message_id);
+            message = messages.services(user.lang, services, page, false, message_id);
         } else if (key === 'car') {
             message = messages.cars(user.lang, cars, page, false, message_id);
         }
@@ -233,7 +237,7 @@ function createEvent() {
             ctx.scene.state.step--;
 
             if (step === 1) {
-                message = messages.services(user.lang, services, 0, message_id);
+                message = messages.services(user.lang, services, 0, false, message_id);
             } else if (step === 2) {
                 message = messages.cars(user.lang, cars, 0, false, message_id);
             } else if (step === 3) {
@@ -305,8 +309,12 @@ function addCar() {
     car.enter(async (ctx) => {
         const { user } = ctx.state;
 
+        const tg_id = (ctx.scene.state.user) ?
+            ctx.scene.state.user.tg_id : user.tg_id;
+
+        ctx.scene.state.isEdit = false;
         ctx.scene.state.step = 0;
-        ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
+        ctx.scene.state.cars = await carDBService.getAll({ tg_id });
 
         const message = messages.cars(user.lang, ctx.scene.state.cars, 0, true);
 
@@ -335,14 +343,29 @@ function addCar() {
 
     car.action(/car-([0-9a-z]+)/, async (ctx) => {
         const { user } = ctx.state;
-        const { step } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
         const _id = ctx.match[1];
 
+        ctx.scene.state.isEdit = true;
         ctx.scene.state.data = await carDBService.get({ _id });
 
-        const message = messages.addCar(user.lang, step, ctx.scene.state.data, message_id);
+        const message = messages.editCar(user.lang, message_id);
+
+        sender.enqueue({
+            chat_id: ctx.from.id,
+            message
+        });
+    });
+
+    car.action(/edit-([a-z_0-9]+)/, async (ctx) => {
+        const { user } = ctx.state;
+        const { data } = ctx.scene.state;
+        const { message_id } = ctx.update.callback_query.message;
+
+        ctx.scene.state.step = Number(ctx.match[1]);
+
+        const message = messages.addCar(user.lang, ctx.scene.state.step, data, message_id);
 
         sender.enqueue({
             chat_id: ctx.from.id,
@@ -363,6 +386,15 @@ function addCar() {
             chat_id: ctx.from.id,
             message
         });
+    });
+
+    car.action('delete', async (ctx) => {
+        const { data } = ctx.scene.state;
+
+        await carDBService.delete({ _id: data._id });
+
+        await ctx.deleteMessage();
+        await ctx.scene.reenter();
     });
 
     car.action('confirm', async (ctx) => {
@@ -389,28 +421,53 @@ function addCar() {
 
     car.action('back', async (ctx) => {
         const { user } = ctx.state;
-        const { data } = ctx.scene.state;
+        const {
+            isEdit,
+            step,
+            data
+        } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
-        ctx.scene.state.step--;
+        let isLeave = true, message = null;
 
-        const message = messages.addCar(user.lang, ctx.scene.state.step, data, message_id);
+        if (isEdit) {
+            await ctx.deleteMessage();
 
-        sender.enqueue({
-            chat_id: ctx.from.id,
-            message
-        });
+            return await ctx.scene.reenter();
+        } else if (step > 0) {
+            ctx.scene.state.step--;
+
+            message = messages.addCar(user.lang, ctx.scene.state.step, data, message_id);
+        } else {
+            if (ctx.scene.state.user && user.isAdmin) {
+                await ctx.deleteMessage();
+
+                return await ctx.scene.enter('adminka');
+            } else {
+                message = messages.start(user.lang, user, message_id);
+            }
+        }
+
+        if (message) {
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        }
+
+        if (isLeave) {
+            await ctx.scene.leave();
+        }
     });
 
     car.on('text', async (ctx) => {
         const { user } = ctx.state;
         const {
+            isEdit,
             step,
             data
         } = ctx.scene.state;
         const { text } = ctx.message;
-
-        ctx.scene.state.step++;
 
         if (step === 0) {
             data.brand = text;
@@ -426,7 +483,17 @@ function addCar() {
             data.techpassport = text;
         }
 
-        const message = messages.addCar(user.lang, ctx.scene.state.step, data);
+        let message = null;
+
+        if (isEdit) {
+            await carDBService.update({ _id: data._id }, data);
+
+            message = messages.editCar(user.lang);
+        } else {
+            ctx.scene.state.step++;
+
+            message = messages.addCar(user.lang, ctx.scene.state.step, data);
+        }
 
         sender.enqueue({
             chat_id: ctx.from.id,
@@ -455,7 +522,7 @@ function editPersonal() {
         });
     });
 
-    personal.action(/change-(fullname|phone)/, async (ctx) => {
+    personal.action(/edit-(fullname|phone)/, async (ctx) => {
         const { user } = ctx.state;
         const { message_id } = ctx.update.callback_query.message;
 
@@ -539,7 +606,7 @@ function editEvent() {
         }
     });
 
-    edit_event.action(/change-(car|location|date)/, async (ctx) => {
+    edit_event.action(/edit-(car|location|date)/, async (ctx) => {
         const { user } = ctx.state;
         const { message_id } = ctx.update.callback_query.message;
 
@@ -656,7 +723,7 @@ function editEvent() {
 }
 
 module.exports = {
-    createEvent,
+    addEvent,
     addCar,
     editPersonal,
     editEvent

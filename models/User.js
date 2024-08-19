@@ -49,6 +49,14 @@ const UserSchema = new Schema({
     },
     calendar_id: {
         type: String
+    },
+    before_time: {
+        type: Number,
+        default: 60
+    },
+    duration_time: {
+        type: Number,
+        default: 60
     }
 }, { versionKey: false });
 

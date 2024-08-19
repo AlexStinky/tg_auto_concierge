@@ -51,25 +51,60 @@ VIN: ${VIN}
 
 carIsAdded_message: 'Авто добавлено'
 
+editCar_message: 'Выберите, что нужно изменить:'
+
 adminPanel_message: '/admin USERNAME - сделать админом
 
 /driver USERNAME - сделать водителем'
 
 personal_message: '<b>${fullname}</b>
 
-📞${phone}'
-enter_fullname_message: 'Введите имя:'
-enter_phone_message: 'Введите номер телефона:'
+Телефон: ${phone}'
 
 personalUpdated_message: 'Персональные данные обновлены'
 
 chooseEvent_message: 'Выберите событие:'
 
-dateIsUpdate_message: 'Дата обновлена'
+dateIsUpdated_message: 'Дата обновлена'
 
 remindCustomer1Hour_message: 'Напоминаем, что уже через час к вам приедет водитель!'
 remindCustomer24Hours_message: 'Напоминаем, что через 24 часа к вам приедет водитель!'
 remindDriver1Hour_message: 'Напоминаем, что через час у вас запланирована поездка!'
+
+enterServiceTitle_message: 'Введите название услуги:'
+enterServiceLimitsOnMonth_message: 'Введите лимит на месяц:'
+
+checkService_message: 'Проверьте услугу:'
+editService_message: 'Выберите, что нужно изменить:'
+
+service_message: '<b>${title}</b>
+
+Лимит на месяц: ${limits}'
+
+serviceIsAdded_message: 'Услуга добавлена'
+
+enterUsername_message: 'Введите юзернейм пользователя:'
+
+chooseTariff_message: 'Выберите тариф:'
+editTariff_message: '<b>${title}</b>
+
+Цена: ${price}
+
+Период: ${period} дней'
+
+editDriver_message: '<b>${user}</b>
+
+Телефон: ${phone}
+
+Время до: ${before_time} минут
+
+Длительность поездки: ${duration_time} минут'
+
+enter_fullname_message: 'Введите имя:'
+enter_phone_message: 'Введите номер телефона:'
+enter_price_message: 'Введите цену (только цифры):'
+enter_before_time_message: 'Введите время ДО вызова (в минутах):'
+enter_duration_time_message: 'Введите длительность поездки (в минутах):'
 
 userInfo_message: '${user}
 
@@ -90,13 +125,36 @@ editPersonal_button: 'Редактировать личные данные'
 editEvent_button: 'Редактировать событие'
 
 addNewCar_button: 'Добавить новое авто'
+deleteCar_button: 'Удалить авто'
 
-changeFullname_message: 'Изменить имя'
-changePhone_message: 'Изменить номер телефона'
+editCarBrand_button: 'Изменить марку авто'
+editCarModel_button: 'Изменить модель авто'
+editCarColor_button: 'Изменить цвет авто'
+editCarRegistrationNumber_button: 'Изменить номера авто'
+editCarVIN_button: 'Изменить VIN авто'
+editCarTechpassport_button: 'Изменить тех. паспорт авто'
 
-changeCar_button: 'Изменить авто'
-changeLocation_button: 'Изменить локацию'
-changeDate_button: 'Изменить дату'
+editFullname_button: 'Изменить имя'
+editPhone_button: 'Изменить номер телефона'
+
+editCar_button: 'Изменить авто'
+editLocation_button: 'Изменить локацию'
+editDate_button: 'Изменить дату'
+
+services_button: 'Услуги'
+cars_button: 'Авто'
+tariffs_button: 'Тарифы'
+drivers_button: 'Водители'
+
+addService_button: 'Добавить услугу'
+deleteService_button: 'Удалить услугу'
+editServiceTitle_button: 'Изменить название услуги'
+editServiceLimits_button: 'Изменить лимиты на месяц'
+
+editPrice_button: 'Изменить цену'
+
+editBeforeTime_button: 'Изменить время до поездки'
+editDurationTime_button: 'Изменить длительность поездки'
 
 confirm_button: 'Подтвердить'
 back_button: 'Назад'

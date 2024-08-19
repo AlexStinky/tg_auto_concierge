@@ -46,6 +46,9 @@ const EventSchema = new Schema({
     time_zone: {
         type: String
     },
+    duration_time: {
+        type: Number
+    }
 }, { versionKey: false });
 
 const Event = mongoose.model('Event', EventSchema);
