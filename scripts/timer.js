@@ -45,7 +45,7 @@ const check = async () => {
     const timeZone = 'Europe/Lisbon';
 
     const events1HourDate = moment();
-    const events24HoursDate = moment().add(22, 'hours');
+    const events24HoursDate = moment().add(23, 'hours');
 
     const events1Hour = await calendarService.getEvents(events1HourDate, timeZone, 1);
     const events24Hours = await calendarService.getEvents(events24HoursDate, timeZone, 1);

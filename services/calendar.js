@@ -26,11 +26,8 @@ class Calendar {
     }
 
     getDate(date, timeZone, hours = 0) {
-        console.log('getDate', date)
         const start_date = moment(date).tz(timeZone);
         const end_date = moment(date).tz(timeZone).add(hours, 'hours');
-
-        console.log('getDate', start_date, end_date)
 
         return {
             start_date,
@@ -63,6 +60,8 @@ class Calendar {
                 start_date,
                 end_date
             } = this.getDate(date, timeZone, hours);
+
+            console.log(start_date.toISOString(), end_date.toISOString())
 
             const res = await this.calendar.events.list({
                 calendarId,
@@ -103,8 +102,6 @@ class Calendar {
                 timeZone: data.time_zone
             }
         };
-
-        console.log(resource)
 
         try {
             const eventRes = await this.calendar.events.insert({
