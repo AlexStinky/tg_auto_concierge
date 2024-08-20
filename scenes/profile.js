@@ -106,7 +106,7 @@ function addEvent() {
 
     event.use(middlewares.start);
     event.use(middlewares.commands);
-    event.use(middlewares.cb);
+    //event.use(middlewares.cb);
 
     event.enter(async (ctx) => {
         const { user } = ctx.state;
@@ -232,9 +232,10 @@ function addEvent() {
         } = ctx.scene.state;
         const { message_id } = ctx.update.callback_query.message;
 
-        if (step > 0) {
-            let message = null;
+        let isLeave = false,
+            message = null;
 
+        if (step > 0) {
             ctx.scene.state.step--;
 
             if (step === 1) {
@@ -247,13 +248,20 @@ function addEvent() {
                 ctx.scene.state.step = 3;
                 message = messages.chooseDate(user.lang, sender.calendar, message_id);
             }
+        } else {
+            isLeave = true;
+            message = messages.start(user.lang, user, message_id);
+        }
 
-            if (message) {
-                sender.enqueue({
-                    chat_id: ctx.from.id,
-                    message
-                });
-            }
+        if (message) {
+            sender.enqueue({
+                chat_id: ctx.from.id,
+                message
+            });
+        }
+
+        if (isLeave) {
+            await ctx.scene.leave();
         }
     });
 
@@ -305,7 +313,7 @@ function addCar() {
 
     car.use(middlewares.start);
     car.use(middlewares.commands);
-    car.use(middlewares.cb);
+    //car.use(middlewares.cb);
 
     car.enter(async (ctx) => {
         const { user } = ctx.state;
@@ -510,7 +518,7 @@ function editPersonal() {
 
     personal.use(middlewares.start);
     personal.use(middlewares.commands);
-    personal.use(middlewares.cb);
+    //personal.use(middlewares.cb);
 
     personal.enter(async (ctx) => {
         const user = await userDBService.get({ tg_id: ctx.from.id });
@@ -562,7 +570,7 @@ function editEvent() {
 
     edit_event.use(middlewares.start);
     edit_event.use(middlewares.commands);
-    edit_event.use(middlewares.cb);
+    //edit_event.use(middlewares.cb);
 
     edit_event.enter(async (ctx) => {
         const { user } = ctx.state;
