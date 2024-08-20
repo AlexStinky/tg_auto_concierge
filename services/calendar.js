@@ -26,8 +26,11 @@ class Calendar {
     }
 
     getDate(date, timeZone, hours = 0) {
+        console.log('getDate', date)
         const start_date = moment(date).tz(timeZone);
         const end_date = moment(date).tz(timeZone).add(hours, 'hours');
+
+        console.log('getDate', start_date, end_date)
 
         return {
             start_date,

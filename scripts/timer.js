@@ -52,8 +52,8 @@ const check = async () => {
 
     console.log(events1Hour, events24Hours)
 
-    remind(events1Hour, '1hour');
-    remind(events24Hours, '24hours');
+    //remind(events1Hour, '1hour');
+    //remind(events24Hours, '24hours');
 
     const now = moment();
     const nextChecking = moment();
