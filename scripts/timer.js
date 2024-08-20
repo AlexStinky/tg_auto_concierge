@@ -44,7 +44,7 @@ const remind = async (events, type) => {
 const check = async () => {
     const timeZone = 'Europe/Lisbon';
 
-    const events1HourDate = moment();
+    const events1HourDate = moment().add(1, 'hours');
     const events24HoursDate = moment().add(23, 'hours');
 
     const events1Hour = await calendarService.getEvents(events1HourDate, timeZone, 1);
