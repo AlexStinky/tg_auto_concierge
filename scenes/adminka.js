@@ -8,7 +8,8 @@ const middlewares = require('../scripts/middlewares');
 const {
     userDBService,
     carDBService,
-    serviceDBService
+    serviceDBService,
+    eventDBService
 } = require('../services/db');
 const { sender } = require('../services/sender');
 
@@ -16,6 +17,7 @@ function adminPanel() {
     const adminka = new Scene('adminka');
 
     adminka.use(middlewares.start);
+    adminka.use(middlewares.commands);
 
     adminka.enter(async (ctx) => {
         const { user } = ctx.state;
@@ -100,6 +102,11 @@ function adminPanel() {
         if (check) {
             check.status = (check.status === 'driver') ? 'free' : 'driver';
 
+            if (check.status === 'driver') {
+                await userDBService.updateAll({ status: 'driver' }, { status: 'free' });
+                await eventDBService.updateAll({}, { driver_id: check.tg_id });
+            }
+
             await userDBService.update({ tg_id: check.tg_id }, check);
 
             const message = messages.userInfo(user.lang, check);
@@ -160,6 +167,7 @@ function addService() {
     const service = new Scene('service');
 
     service.use(middlewares.start);
+    service.use(middlewares.commands);
 
     service.enter(async (ctx) => {
         const { user } = ctx.state;
@@ -418,6 +426,7 @@ function editTariff() {
     const edit_tariff = new Scene('edit_tariff');
 
     edit_tariff.use(middlewares.start);
+    edit_tariff.use(middlewares.commands);
 
     edit_tariff.enter(async (ctx) => {
         const { user } = ctx.state;
@@ -545,6 +554,7 @@ function editDriver() {
     const edit_driver = new Scene('edit_driver');
 
     edit_driver.use(middlewares.start);
+    edit_driver.use(middlewares.commands);
 
     edit_driver.enter(async (ctx) => {
         const { user } = ctx.state;

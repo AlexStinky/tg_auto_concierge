@@ -18,6 +18,8 @@ checkOrder_message: 'Проверьте ваш заказ:'
 newOrder_message: 'Новый заказ:'
 updateOrder_message: 'Заказ был обновлен:'
 
+eventAddress_message: 'Адрес указан на карте выше'
+
 event_message: 'Имя: ${fullname}
 
 Телефон: ${phone}
@@ -66,6 +68,7 @@ personalUpdated_message: 'Персональные данные обновлен
 chooseEvent_message: 'Выберите событие:'
 
 dateIsUpdated_message: 'Дата обновлена'
+dateIsExceedsSubscriptionPeriod_message: 'Выбраная дата превышает срок действия подписки'
 
 remindCustomer1Hour_message: 'Напоминаем, что уже через час к вам приедет водитель!'
 remindCustomer24Hours_message: 'Напоминаем, что через 24 часа к вам приедет водитель!'

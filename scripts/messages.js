@@ -15,21 +15,19 @@ const i18n = new TelegrafI18n({
 
 const DEFAULT_DATE_FORMAT = 'YYYY-MM-DD HH:mm';
 
-const eventText = (data) => ({
+const eventText = (lang, data) => ({
     fullname: data.fullname,
     phone: data.phone,
     service: data.service,
     car: data.car,
     location: (typeof data.location === 'object') ?
-        JSON.stringify(data.location) : data.location,
+        i18n.t(lang, 'eventAddress_message') : data.location,
     startDate: moment(data.start_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT),
     endDate: moment(data.end_date).tz(data.time_zone).format(DEFAULT_DATE_FORMAT)
 });
 
-const getTimeSlots = (timeZone, excludedRanges, dayDate) => {
-    console.log(dayDate)
-    let now = moment(dayDate).tz(timeZone).startOf('hour').add(1, 'hour');
-    console.log(now)
+const getTimeSlots = (timeZone, excludedRanges, dayDate, before) => {
+    let now = moment(dayDate).tz(timeZone).startOf('hour').add(before, 'minutes');
     
     const endOfDay = moment(dayDate).tz(timeZone).endOf('day');
 
@@ -54,7 +52,7 @@ const getTimeSlots = (timeZone, excludedRanges, dayDate) => {
             const button = { text: time, callback_data: `time-${time}` };
             const temp = inline_keyboard[inline_keyboard.length - 1];
 
-            if (!temp || temp.length % 7 === 0) {
+            if (!temp || temp.length % 6 === 0) {
                 inline_keyboard[inline_keyboard.length] = [button];
             } else {
                 inline_keyboard[inline_keyboard.length - 1][temp.length] = button;
@@ -299,7 +297,7 @@ const chooseDate = (lang, calendar, message_id = null) => {
     return message;
 };
 
-const chooseTime = (lang, timeZone, busy, date, message_id = null) => {
+const chooseTime = (lang, timeZone, busy, date, before_time, message_id = null) => {
     const message = {
         type: (message_id) ? 'edit_text' : 'text',
         message_id,
@@ -325,7 +323,7 @@ const chooseTime = (lang, timeZone, busy, date, message_id = null) => {
     if (isBusy) {
         message.text = i18n.t(lang, 'dayIsAlreadyBusy_message');
     } else {
-        inline_keyboard = getTimeSlots(timeZone, temp, date);
+        inline_keyboard = getTimeSlots(timeZone, temp, date, before_time);
     }
 
     inline_keyboard[inline_keyboard.length] = [
@@ -376,7 +374,7 @@ const events = (lang, data, page, message_id = null) => {
 };
 
 const event = (lang, key, data, message_id = null) => {
-    const temp = eventText(data);
+    const temp = eventText(lang, data);
     const message = {
         type: (typeof data.location === 'object') ?
             'location' : (message_id) ?
@@ -469,7 +467,7 @@ const tariffs = (lang, data, message_id = null) => {
 };
 
 const editEvent = (lang, data, message_id = null) => {
-    const temp = eventText(data);
+    const temp = eventText(lang, data);
     const message = {
         type: (typeof data.location === 'object') ?
             'location' : (message_id) ?

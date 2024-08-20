@@ -113,7 +113,9 @@ const cb = async (ctx, next) => {
         if (match[0] === 'cancel') {
             await ctx.scene.leave();
 
-            response_message = messages.start(user.lang, user, message_id);
+            sender.deleteMessage(ctx.from.id, message_id);
+
+            response_message = messages.start(user.lang, user);
         }
 
         if (match[0] === 'about') {
@@ -199,12 +201,20 @@ const calendar = async (ctx, date) => {
 
     if (data) {
         if (step === 3 || key === 'date') {
-            ctx.scene.state.step++;
-            ctx.scene.state.data.start_date = date;
+            const _date = moment(date);
 
-            const free = await calendarService.getEvents(date, user.time_zone, 24);
+            if (_date < user.sub_end_date) {
+                ctx.scene.state.step++;
+                ctx.scene.state.data.start_date = date;
 
-            message = messages.chooseTime(user.lang, user.time_zone, free, date, message_id);
+                const free = await calendarService.getEvents(date, user.time_zone, 24);
+
+                message = messages.chooseTime(user.lang, user.time_zone, free, date, data.before_time, message_id);
+            } else {
+                //await ctx.answerCbQuery(ctx.i18n.t('dateIsExceedsSubscriptionPeriod_message'), true);
+
+                await ctx.replyWithHTML(ctx.i18n.t('dateIsExceedsSubscriptionPeriod_message'));
+            }
         }
     }
 

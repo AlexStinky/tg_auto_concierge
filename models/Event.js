@@ -48,6 +48,9 @@ const EventSchema = new Schema({
     },
     duration_time: {
         type: Number
+    },
+    before_time: {
+        type: Number
     }
 }, { versionKey: false });
 

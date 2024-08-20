@@ -61,8 +61,6 @@ class Calendar {
                 end_date
             } = this.getDate(date, timeZone, hours);
 
-            console.log(start_date, end_date)
-
             const res = await this.calendar.events.list({
                 calendarId,
                 timeMin: start_date.toISOString(),

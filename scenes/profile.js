@@ -157,6 +157,7 @@ function addEvent() {
                 data.car = car.brand + ' ' + car.model;
                 data.driver_id = driver.tg_id;
                 data.duration_time = driver.duration_time;
+                data.before_time = driver.before_time;
 
                 message = messages.location(user.lang, message_id);
             }

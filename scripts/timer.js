@@ -6,8 +6,6 @@ const { calendarService } = require('../services/calendar');
 const { eventDBService } = require('../services/db');
 const { sender } = require('../services/sender');
 
-const CHECK_DELAY = 3600000;
-
 const remind = async (events, type) => {
     for (let i = 0; i < events.length; i++) {
         const event = events[i];
@@ -57,7 +55,14 @@ const check = async () => {
     remind(events1Hour, '1hour');
     remind(events24Hours, '24hours');
 
-    setTimeout(check, CHECK_DELAY);
+    const now = moment();
+    const nextChecking = moment();
+    nextChecking.add(1, 'hours');
+    nextChecking.minutes(0);
+
+    const delay = nextChecking - now;
+
+    setTimeout(check, delay);
 }
 
 module.exports = {
