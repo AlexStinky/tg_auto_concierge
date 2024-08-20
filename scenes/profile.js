@@ -12,7 +12,9 @@ const {
 const { calendarService } = require('../services/calendar');
 const { sender } = require('../services/sender');
 
-const getServices = async () => {
+const getServices = async (ctx) => {
+    const { user } = ctx.state;
+
     const now = new Date();
     const startMonth = new Date();
     startMonth.setDate(1);
@@ -26,6 +28,7 @@ const getServices = async () => {
     for (let i = 0; i < services.length; i++) {
         const service = services[i];
         const events = await eventDBService.getCount({
+            customer_id: user.tg_id,
             service_id: service._id,
             creation_date: {
                 $gt: startMonth,
@@ -69,8 +72,6 @@ const eventTime = async (ctx, isEdit = false) => {
         minutes: minutes
     });
     end_date.add(data.duration_time, 'minutes');
-
-    console.log(end_date)
 
     data.start_date = start_date;
     data.end_date = end_date;
@@ -118,7 +119,7 @@ function addEvent() {
             phone: user.phone,
             time_zone: user.time_zone
         };
-        ctx.scene.state.services = await getServices();
+        ctx.scene.state.services = await getServices(ctx);
         ctx.scene.state.cars = await carDBService.getAll({ tg_id: user.tg_id });
 
         const message = messages.services(user.lang, ctx.scene.state.services, 0, false);
