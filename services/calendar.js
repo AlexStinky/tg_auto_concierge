@@ -54,15 +54,8 @@ class Calendar {
         console.log(calendars.data.items);
     }
 
-    async getEvents(date, timeZone, hours = 0, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
+    async getEvents(start_date, end_date, calendarId = process.env.GOOGLE_EMAIL, maxResults = 100) {
         try {
-            const {
-                start_date,
-                end_date
-            } = this.getDate(date, timeZone, hours);
-
-            console.log(start_date.toISOString(), end_date.toISOString())
-
             const res = await this.calendar.events.list({
                 calendarId,
                 timeMin: start_date.toISOString(),

@@ -601,8 +601,7 @@ function editEvent() {
         const _id = ctx.match[1];
 
         ctx.scene.state.data = await eventDBService.get({ _id });
-
-        console.log(ctx.scene.state.data)
+        ctx.scene.state.data.reminded = [];
 
         if (ctx.scene.state.data) {
             const message = messages.editEvent(user.lang, ctx.scene.state.data, message_id);

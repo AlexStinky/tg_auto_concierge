@@ -77,10 +77,7 @@ const commands = async (ctx, next) => {
         }
 
         if (text === '/update') {
-            await userDBService.dropCollection();
-            await carDBService.dropCollection();
-            await serviceDBService.dropCollection();
-            await eventDBService.dropCollection();
+            await eventDBService.updateAll({}, { reminded: [] });
         }
 
         if (response_message) {
@@ -207,7 +204,10 @@ const calendar = async (ctx, date) => {
                 ctx.scene.state.step++;
                 ctx.scene.state.data.start_date = date;
 
-                const free = await calendarService.getEvents(date, user.time_zone, 24);
+                const start_date = moment(date).tz(user.time_zone);
+                const end_date = moment(date).tz(user.time_zone).add(24, 'hours');
+
+                const free = await calendarService.getEvents(start_date, end_date);
 
                 message = messages.chooseTime(user.lang, user.time_zone, free, date, data.before_time, message_id);
             } else {

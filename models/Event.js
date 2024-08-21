@@ -51,6 +51,10 @@ const EventSchema = new Schema({
     },
     before_time: {
         type: Number
+    },
+    reminded: {
+        type: Array,
+        default: []
     }
 }, { versionKey: false });
 
